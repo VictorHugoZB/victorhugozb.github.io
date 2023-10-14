@@ -21,6 +21,13 @@ void Window::onEvent(SDL_Event const &event) {
 void Window::onCreate() {
   auto const assetsPath{abcg::Application::getAssetsPath()};
 
+  // Load a new font
+  auto const filename{assetsPath + "Inconsolata-Medium.ttf"};
+  m_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(filename.c_str(), 60.0f);
+  if (m_font == nullptr) {
+    throw abcg::RuntimeError("Cannot load font file");
+  }
+
   // Create program to render the other objects
   m_program =
       abcg::createOpenGLProgram({{.source = assetsPath + "objects.vert",
@@ -53,20 +60,19 @@ void Window::restart() {
 void Window::onUpdate() {
   auto const deltaTime{gsl::narrow_cast<float>(getDeltaTime())};
 
-  // Wait 5 seconds before restarting
   if (m_gameData.m_state != State::Playing &&
-      m_restartWaitTimer.elapsed() > 5) {
+      m_restartWaitTimer.elapsed() > 3) {
     restart();
     return;
   }
 
   m_bar.update(m_gameData, deltaTime);
   m_border.update();
-  m_ball.update(m_bar, m_gameData, deltaTime);
+  m_ball.update(m_bar, m_gameViewport, deltaTime);
 
   if (m_gameData.m_state == State::Playing) {
     checkCollisions();
-    checkWinCondition();
+    checkEndGameConditions();
   }
 }
 
@@ -179,9 +185,10 @@ void Window::checkCollisions() {
   //   }
 }
 
-void Window::checkWinCondition() {
-  //   if (m_asteroids.m_asteroids.empty()) {
-  //     m_gameData.m_state = State::Win;
-  //     m_restartWaitTimer.restart();
-  //   }
+void Window::checkEndGameConditions() {
+  if (m_ball.m_dead) {
+    m_ball.m_dead = false;
+    m_gameData.m_state = State::GameOver;
+    m_restartWaitTimer.restart();
+  }
 }

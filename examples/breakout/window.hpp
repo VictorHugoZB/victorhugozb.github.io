@@ -42,7 +42,7 @@ private:
 
   void restart();
   void checkCollisions();
-  void checkWinCondition();
+  void checkEndGameConditions();
 };
 
 #endif

@@ -1,7 +1,19 @@
 #include "ball.hpp"
+#include "gamedata.hpp"
 
+#include <cmath>
+#include <cstdio>
 #include <glm/fwd.hpp>
+#include <glm/geometric.hpp>
 #include <glm/gtx/rotate_vector.hpp>
+#include <numbers>
+
+float mapIntervalToAngle(float initial, float final, float target) {
+  float c = std::numbers::pi / 6.00f;
+  float d = c * 5.00f;
+
+  return c + ((d - c) / (final - initial)) * (target - initial);
+}
 
 void Ball::create(GLuint program) {
   destroy();
@@ -17,8 +29,12 @@ void Ball::create(GLuint program) {
   auto const positionAttribute{
       abcg::glGetAttribLocation(m_program, "inPosition")};
 
+  m_translation = glm::vec2(0);
+  m_dead = false;
+  m_velocity = glm::normalize(glm::vec2{0.00f, -0.5f}) * 1.00f;
+
   std::array positions{
-      glm::vec2{0.00, +0.2f},
+      glm::vec2{0.00, +0.00f},
   };
 
   // Generate VBO
@@ -65,13 +81,38 @@ void Ball::destroy() {
   abcg::glDeleteVertexArrays(1, &m_VAO);
 }
 
-void Ball::update(Bar &bar, const GameData &gameData, float deltaTime) {
-  if (m_translation.x >= 1.0f || m_translation.x <= -1.0f) {
-    m_velocity = glm::vec2{-m_velocity.x, m_velocity.y};
+void Ball::update(Bar &bar, GameViewport gameViewport, float deltaTime) {
+  if (m_translation.x + m_pointSize / (2 * gameViewport.x) >= 1.0f) {
+    m_velocity = glm::vec2{-abs(m_velocity.x), m_velocity.y};
   }
 
-  if (m_translation.y >= 1.0f || m_translation.y <= -1.0f) {
-    m_velocity = glm::vec2{m_velocity.x, -m_velocity.y};
+  if (m_translation.x - m_pointSize / (2 * gameViewport.x) <= -1.0f) {
+    m_velocity = glm::vec2{abs(m_velocity.x), m_velocity.y};
+  }
+
+  if (m_translation.y + m_pointSize / (2 * gameViewport.x) >= 1.0f) {
+    m_velocity = glm::vec2{m_velocity.x, -abs(m_velocity.y)};
+  }
+
+  if (m_translation.y - m_pointSize / (2 * gameViewport.x) <= -1.0f) {
+    m_dead = true;
+  }
+
+  if (m_velocity.y < 0 &&
+      m_translation.y - m_pointSize / (2 * gameViewport.x) >=
+          bar.m_translation.y + (0.03f * bar.m_scale) - 0.01 &&
+      m_translation.y - m_pointSize / (2 * gameViewport.x) <=
+          bar.m_translation.y + (0.03f * bar.m_scale) + 0.01 &&
+      m_translation.x + m_pointSize / (2 * gameViewport.x) >=
+          bar.m_translation.x - bar.m_scale &&
+      m_translation.x - m_pointSize / (2 * gameViewport.x) <=
+          bar.m_translation.x + bar.m_scale) {
+
+    float initial = bar.m_translation.x - bar.m_scale / 2;
+    float final = bar.m_translation.x + bar.m_scale / 2;
+    float target = std::min(std::max(m_translation.x, initial), final);
+    float angle = mapIntervalToAngle(initial, final, target);
+    m_velocity = glm::normalize(glm::vec2{-cos(angle), abs(sin(angle))}) * 1.5f;
   }
 
   m_translation += m_velocity * deltaTime;

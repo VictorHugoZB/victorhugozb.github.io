@@ -89,6 +89,7 @@ void Window::onCreate() {
 }
 
 void Window::restart() {
+  printf("ELAPSED: %f", m_restartWaitTimer.elapsed());
   m_gameData.m_state = State::Playing;
 
   m_starLayers.create(m_starsProgram, 25);
@@ -101,6 +102,7 @@ void Window::onUpdate() {
   auto const deltaTime{gsl::narrow_cast<float>(getDeltaTime())};
 
   // Wait 5 seconds before restarting
+  printf("ELAPSED: %f", m_restartWaitTimer.elapsed());
   if (m_gameData.m_state != State::Playing &&
       m_restartWaitTimer.elapsed() > 5) {
     restart();

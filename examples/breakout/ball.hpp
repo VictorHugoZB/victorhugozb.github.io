@@ -15,14 +15,13 @@ public:
   void create(GLuint program);
   void paint();
   void destroy();
-  void update(Bar &bar, const GameData &gameData, float deltaTime);
+  void update(Bar &bar, GameViewport gameViewport, float deltaTime);
 
-  bool m_dead{};
+  bool m_dead{false};
   glm::vec2 m_translation{};
-  glm::vec2 m_velocity{glm::normalize(glm::vec2{0.7f, -0.3f})};
+  glm::vec2 m_velocity{glm::normalize(glm::vec2{0.00f, -0.5f}) * 1.00f};
 
-  float m_scale{0.015f};
-  float m_pointSize{5.0f};
+  float m_pointSize{8.0f};
   glm::vec4 m_color{1};
 
 private:
