@@ -7,6 +7,7 @@
 
 #include "ball.hpp"
 #include "bar.hpp"
+#include "block.hpp"
 #include "border.hpp"
 
 class Window : public abcg::OpenGLWindow {
@@ -32,6 +33,7 @@ private:
   Bar m_bar;
   Border m_border;
   Ball m_ball;
+  Blocks m_blocks;
 
   abcg::Timer m_restartWaitTimer;
 
@@ -41,8 +43,8 @@ private:
   GLuint m_VBOBorder{};
 
   void restart();
-  void checkCollisions();
   void checkEndGameConditions();
+  void nextLevel();
 };
 
 #endif

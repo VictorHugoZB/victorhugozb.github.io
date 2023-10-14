@@ -1,6 +1,20 @@
 #include "window.hpp"
 #include "abcgOpenGLFunction.hpp"
+#include "block.hpp"
 #include "core.h"
+#include "gamedata.hpp"
+#include "imgui.h"
+#include <algorithm>
+
+void Window::nextLevel() {
+  if (m_gameData.m_level == Level::Level1) {
+    m_gameData.m_level = Level::Level2;
+  } else if (m_gameData.m_level == Level::Level2) {
+    m_gameData.m_level = Level::Level3;
+  } else {
+    m_gameData.m_level = Level::Level1;
+  }
+}
 
 void Window::onEvent(SDL_Event const &event) {
   // Keyboard events
@@ -55,6 +69,7 @@ void Window::restart() {
   m_bar.create(m_program);
   m_border.create(m_program);
   m_ball.create(m_program_ball);
+  m_blocks.create(m_program, m_gameData.m_level);
 }
 
 void Window::onUpdate() {
@@ -62,6 +77,11 @@ void Window::onUpdate() {
 
   if (m_gameData.m_state != State::Playing &&
       m_restartWaitTimer.elapsed() > 3) {
+    if (m_gameData.m_state == State::GameOver) {
+      m_gameData.m_level = Level::Level1;
+    } else {
+      this->nextLevel();
+    }
     restart();
     return;
   }
@@ -69,9 +89,9 @@ void Window::onUpdate() {
   m_bar.update(m_gameData, deltaTime);
   m_border.update();
   m_ball.update(m_bar, m_gameViewport, deltaTime);
+  m_blocks.update(m_ball);
 
   if (m_gameData.m_state == State::Playing) {
-    checkCollisions();
     checkEndGameConditions();
   }
 }
@@ -84,6 +104,7 @@ void Window::onPaint() {
   m_bar.paint(m_gameData);
   m_border.paint(m_gameData);
   m_ball.paint();
+  m_blocks.paint();
 }
 
 void Window::onPaintUI() {
@@ -104,10 +125,45 @@ void Window::onPaintUI() {
     if (m_gameData.m_state == State::GameOver) {
       ImGui::Text("Game Over!");
     } else if (m_gameData.m_state == State::Win) {
-      ImGui::Text("*You Win!*");
+      if (m_gameData.m_level == Level::Level1 ||
+          m_gameData.m_level == Level::Level2) {
+        ImGui::Text("Get ready...");
+      } else {
+        ImGui::Text("*Congrats!*");
+      }
     }
 
     ImGui::PopFont();
+    ImGui::End();
+  }
+
+  {
+    // Window begin
+    auto const size{ImVec2(300, 160)};
+    auto const position{ImVec2(m_viewportSize.x - 300, 0)};
+
+    ImGui::SetNextWindowPos(position);
+    ImGui::SetNextWindowSize(size);
+
+    ImGui::Begin("Breakout Config", nullptr,
+                 ImGuiWindowFlags_NoNavFocus |
+                     ImGuiWindowFlags_NoFocusOnAppearing);
+    // Slider from 0.0f to 1.0f
+    ImGui::SliderFloat("Ball Speed", &m_ball.m_velocityFactor, 0.2f, 4.00f);
+    ImGui::SliderFloat("Bar Speed", &m_bar.m_velocityFactor, 0.2f, 4.00f);
+    if (ImGui::Selectable("Level 1", m_gameData.m_level == Level::Level1)) {
+      m_gameData.m_level = Level::Level1;
+      restart();
+    }
+    if (ImGui::Selectable("Level 2", m_gameData.m_level == Level::Level2)) {
+      m_gameData.m_level = Level::Level2;
+      restart();
+    }
+    if (ImGui::Selectable("Level 3", m_gameData.m_level == Level::Level3)) {
+      m_gameData.m_level = Level::Level3;
+      restart();
+    }
+    // Window end
     ImGui::End();
   }
 }
@@ -124,71 +180,28 @@ void Window::onResize(glm::ivec2 const &size) {
 
 void Window::onDestroy() {
   abcg::glDeleteProgram(m_program);
-  abcg::glDeleteProgram(m_program);
+  abcg::glDeleteProgram(m_program_ball);
 
   m_bar.destroy();
   m_border.destroy();
   m_ball.destroy();
-}
-
-void Window::checkCollisions() {
-  // Check collision between ship and asteroids
-  //   for (auto const &asteroid : m_asteroids.m_asteroids) {
-  //     auto const asteroidTranslation{asteroid.m_translation};
-  //     auto const distance{
-  //         glm::distance(m_ship.m_translation, asteroidTranslation)};
-
-  //     if (distance < m_ship.m_scale * 0.9f + asteroid.m_scale * 0.85f) {
-  //       m_gameData.m_state = State::GameOver;
-  //       m_restartWaitTimer.restart();
-  //     }
-  //   }
-
-  //   // Check collision between bullets and asteroids
-  //   for (auto &bullet : m_bullets.m_bullets) {
-  //     if (bullet.m_dead)
-  //       continue;
-
-  //     for (auto &asteroid : m_asteroids.m_asteroids) {
-  //       for (auto const i : {-2, 0, 2}) {
-  //         for (auto const j : {-2, 0, 2}) {
-  //           auto const asteroidTranslation{asteroid.m_translation +
-  //                                          glm::vec2(i, j)};
-  //           auto const distance{
-  //               glm::distance(bullet.m_translation, asteroidTranslation)};
-
-  //           if (distance < m_bullets.m_scale + asteroid.m_scale * 0.85f) {
-  //             asteroid.m_hit = true;
-  //             bullet.m_dead = true;
-  //           }
-  //         }
-  //       }
-  //     }
-
-  //     // Break asteroids marked as hit
-  //     for (auto const &asteroid : m_asteroids.m_asteroids) {
-  //       if (asteroid.m_hit && asteroid.m_scale > 0.10f) {
-  //         std::uniform_real_distribution randomDist{-1.0f, 1.0f};
-  //         std::generate_n(std::back_inserter(m_asteroids.m_asteroids), 3,
-  //         [&]() {
-  //           glm::vec2 const offset{randomDist(m_randomEngine),
-  //                                  randomDist(m_randomEngine)};
-  //           auto const newScale{asteroid.m_scale * 0.5f};
-  //           return m_asteroids.makeAsteroid(
-  //               asteroid.m_translation + offset * newScale, newScale);
-  //         });
-  //       }
-  //     }
-
-  //     m_asteroids.m_asteroids.remove_if([](auto const &a) { return a.m_hit;
-  //     });
-  //   }
+  m_blocks.destroy();
 }
 
 void Window::checkEndGameConditions() {
   if (m_ball.m_dead) {
     m_ball.m_dead = false;
     m_gameData.m_state = State::GameOver;
+    m_restartWaitTimer.restart();
+  }
+
+  std::vector<Blocks::Block> m_blocks_destructable;
+  std::copy_if(m_blocks.m_blocks.begin(), m_blocks.m_blocks.end(),
+               std::back_inserter(m_blocks_destructable),
+               [](const Blocks::Block &m) { return m.m_destructable; });
+
+  if (m_blocks_destructable.empty()) {
+    m_gameData.m_state = State::Win;
     m_restartWaitTimer.restart();
   }
 }

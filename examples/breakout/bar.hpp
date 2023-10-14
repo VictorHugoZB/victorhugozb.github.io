@@ -19,6 +19,7 @@ public:
   float m_scale{0.15f};
   glm::vec2 m_translation{};
   glm::vec2 m_velocity{};
+  float m_velocityFactor{1.5f};
 
 private:
   GLuint m_program{};

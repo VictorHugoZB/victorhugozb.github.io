@@ -31,7 +31,7 @@ void Ball::create(GLuint program) {
 
   m_translation = glm::vec2(0);
   m_dead = false;
-  m_velocity = glm::normalize(glm::vec2{0.00f, -0.5f}) * 1.00f;
+  m_velocity = glm::normalize(glm::vec2{0.80f, -0.3f}) * 1.00f;
 
   std::array positions{
       glm::vec2{0.00, +0.00f},
@@ -112,7 +112,8 @@ void Ball::update(Bar &bar, GameViewport gameViewport, float deltaTime) {
     float final = bar.m_translation.x + bar.m_scale / 2;
     float target = std::min(std::max(m_translation.x, initial), final);
     float angle = mapIntervalToAngle(initial, final, target);
-    m_velocity = glm::normalize(glm::vec2{-cos(angle), abs(sin(angle))}) * 1.5f;
+    m_velocity = glm::normalize(glm::vec2{-cos(angle), abs(sin(angle))}) *
+                 m_velocityFactor;
   }
 
   m_translation += m_velocity * deltaTime;

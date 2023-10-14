@@ -96,7 +96,7 @@ void Bar::update(GameData const &gameData, float deltaTime) {
     }
 
     m_translation =
-        glm::vec2{m_translation.x - 1.5f * deltaTime, m_translation.y};
+        glm::vec2{m_translation.x - m_velocityFactor * deltaTime, m_translation.y};
   }
   if (gameData.m_input[gsl::narrow<size_t>(Input::Right)]) {
     if (m_translation.x >= 1.00 - m_scale) {
@@ -104,6 +104,6 @@ void Bar::update(GameData const &gameData, float deltaTime) {
     }
 
     m_translation =
-        glm::vec2{m_translation.x + 1.5f * deltaTime, m_translation.y};
+        glm::vec2{m_translation.x + m_velocityFactor * deltaTime, m_translation.y};
   }
 }

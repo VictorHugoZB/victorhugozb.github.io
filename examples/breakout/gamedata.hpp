@@ -5,10 +5,12 @@
 
 enum class Input { Right, Left };
 enum class State { Playing, GameOver, Win };
+enum class Level { Level1, Level2, Level3 };
 
 struct GameData {
+  Level m_level{Level::Level1};
   State m_state{State::Playing};
-  std::bitset<5> m_input;
+  std::bitset<2> m_input;
 };
 
 struct GameViewport {
