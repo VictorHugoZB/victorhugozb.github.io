@@ -148,8 +148,6 @@ void Window::onPaintUI() {
                                  ImGuiWindowFlags_NoFocusOnAppearing};
 
     ImGui::Begin("Options", nullptr, flags);
-    ImGui::Text("Ball speed");
-    ImGui::SliderFloat(" ", &m_ball.m_velocityFactor, 0.2f, 2.00f);
     ImGui::Text("Bar speed");
     ImGui::SliderFloat("  ", &m_bar.m_velocityFactor, 0.2f, 4.00f);
     if (ImGui::Selectable("Level 1", m_gameData.m_level == Level::Level1)) {

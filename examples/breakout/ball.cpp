@@ -31,7 +31,7 @@ void Ball::create(GLuint program) {
 
   m_translation = glm::vec2(0);
   m_dead = false;
-  m_velocity = glm::normalize(glm::vec2{0.80f, -0.3f}) * 1.00f;
+  m_velocity = glm::normalize(glm::vec2{0.80f, -0.3f}) * m_velocityFactor;
 
   std::array positions{
       glm::vec2{0.00, +0.00f},
