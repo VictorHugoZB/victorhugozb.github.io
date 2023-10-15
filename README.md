@@ -1,113 +1,42 @@
-# ABCg
+# Computação Gráfica - Atividade 1
+### Victor Hugo Zaninette Bernardino - RA: 11201811443
 
-![build workflow](https://github.com/hbatagelo/abcg/actions/workflows/build.yml/badge.svg)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/hbatagelo/abcg)](https://github.com/hbatagelo/abcg/releases/latest)
+## Descrição do projeto
 
-Development framework accompanying the course [MCTA008-17 Computer Graphics](http://professor.ufabc.edu.br/~harlen.batagelo/cg/) at [UFABC](https://www.ufabc.edu.br/).
+O projeto visa recriar o clássico jogo chamado "breakout", que consiste em destruir todos os blocos que se encontram na parte superior da tela, sem deixar com que a bolinha em movimento caia para fora da tela. No canto superior direito existe a opção de aumentar ou diminuir a velocidade da barra controlada pela jogador, bem como selecionar os níveis de 1 até 3. Os níveis 2 e 3 acrescentam no jogo blocos cinzas, que não são destrutíveis (bem como não são exigidos para conclusão do nível). A barra pode ser controlada com as teclas "a" e "d", ou seta esquerda / seta direita.
 
-[Documentation](https://hbatagelo.github.io/abcg/abcg/doc/html/) | [Release notes](CHANGELOG.md)
+## Código
 
-ABCg is a lightweight C++ framework that simplifies the development of 3D graphics applications based on [OpenGL](https://www.opengl.org), [OpenGL ES](https://www.khronos.org), [WebGL](https://www.khronos.org/webgl/), and [Vulkan](https://www.vulkan.org). It is designed for the tutorials and assignments of the course "MCTA008-17 Computer Graphics" taught at Federal University of ABC (UFABC).
+Assim como o jogo asteroids apresentado em aula, o projeto atual consiste em uma divisão de arquivos por objetos dentro do jogo, e cada um com funções como create, paint, update, destroy, funções essas que são chamadas dentro do main.cpp. Para este jogo, foram criadas as seguintes classes: border, que renderiza a borda do jogo; ball, renderiza e atualiza a bolinha dentro do jogo; bar, renderiza e atualiza a barra controlada pelo jogador; block, atualiza e renderiza os blocos que são atingidos pela bolinha na parte superior da tela.
 
-***
+Funções repetitivas, como a de renderizar os pontos ou objetos na tela foram utilizadas em vários dos arquivos, e são muito similares as apresentadas no asteroids. Abaixo serão apresentados alguns dos principais pontos do projeto:
 
-## Main features
+### A classe da "bolinha" -> ball.cpp
 
-*   Supported platforms: Linux, macOS, Windows, WebAssembly.
-*   Supported backends: OpenGL 3.3+, OpenGL ES 3.0+, WebGL 2.0 (via Emscripten), Vulkan 1.3.
-*   Applications that use the common subset of functions between OpenGL 3.3 and OpenGL ES 3.0 can be built for WebGL 2.0 using the same source code.
-*   OpenGL functions can be qualified with the `abcg::` namespace to enable throwing exceptions with descriptive GL error messages that include the source code location.
-*   Includes helper classes and functions for loading textures (using [SDL\_image](https://www.libsdl.org/projects/SDL_image/)), loading OBJ 3D models (using [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader)), and compiling GLSL shaders to SPIR-V with [glslang](https://github.com/KhronosGroup/glslang).
+Para essa classe, vale destacar que a bolinha é renderizada como um ponto do OpenGL, utilizando a flag GL_POINTS com count = 1. O tamanho do ponto foi aumentado utilizando o vertex shader ball.vert, localizado em assets. Além disso, o fragment shader ball.frag foi utilizado para deixar seu formato circular.
 
-***
+Outro ponto de destaque para essa classe é a sua função de update. Nela, é checado a colisão da bolinha com as bordas do cenário e com a barra controlada pelo jogador. Ainda, no caso de ser uma colisão com a barra controlada pelo jogador, uma função é calculada baseada em seno e cosseno para redirecionar a bola de forma consistente.
 
-## Requirements
+### A classe da barra -> bar.cpp
 
-The following minimum requirements are shared among all platforms:
+Para renderizar a barra foi utilizado geometria indexada (EBOs). Em sua função update, é controlado o deslocamento da barra conforme input do jogador.
 
-*   [CMake](https://cmake.org/) 3.21.
-*   A C++ compiler with at least partial support for C++20 (tested with GCC 12, Clang 16, MSVC 17, and emcc 3.1.42).
-*   A system with support for OpenGL 3.3 (OpenGL backend) or Vulkan 1.3 (Vulkan backend). Conformant software rasterizers such as Mesa's [Gallium llvmpipe](https://docs.mesa3d.org/drivers/llvmpipe.html) and lavapipe (post Jun 2022) are supported. Mesa's [D3D12](https://devblogs.microsoft.com/directx/directx-heart-linux/) backend on [WSL 2.0](https://docs.microsoft.com/en-us/windows/wsl/install) is supported as well.
+### A classe dos blocos -> block.cpp
 
-For WebAssembly:
+Essa classe controla uma lista de blocos renderizados por geometria indexada (EBOs). Em sua função de update é checada a colisão da bolinha com algum dos blocos em tela. Caso ocorra uma colisão, os blocos envolvidos são removidos de tela e o direcionamento da bolinha é recalculada. Além disso, existem também blocos que não são destrutíveis, e esses são sinalizados com a flag m_destructable.
 
-*   [Emscripten](https://emscripten.org/).
-*   A browser with support for WebGL 2.0.
+### A classe da borda -> border.cpp
 
-For building desktop applications:
+Essa classe foi utilizada unicamente para desenhar as bordas do jogo. Para sua renderização foi utilizada a flag GL_LINE_STRIP do openGL para desenhar uma linha.
 
-*   [SDL](https://www.libsdl.org/) 2.0.
-*   [SDL\_image](https://www.libsdl.org/projects/SDL_image/) 2.0.
-*   [GLEW](http://glew.sourceforge.net/) 2.2.0 (required for OpenGL-based applications).
-*   [Vulkan](https://www.lunarg.com/vulkan-sdk/) 1.3 (required for Vulkan-based applications).
+### O arquivo gamedata.hpp
 
-Desktop dependencies can be resolved automatically with [Conan](https://conan.io/), but it is disabled by default. To use Conan, install Conan 1.47 or a later 1.\* version (ABCg is not compatible with Conan 2.0!) and then configure CMake with `-DENABLE_CONAN=ON`.
+Esse arquivo controla não somente o estado do jogo (como playing, game over e win), como também o nível do jogo, que pode ser 1, 2 ou 3, conforme descrito acima.
 
-The default renderer backend is OpenGL (CMake option `GRAPHICS_API=OpenGL`). To use the Vulkan backend, configure CMake with `-DGRAPHICS_API=Vulkan`.
+### window.cpp
 
-***
+No arquivo principal, além de ser chamado as funções de create, paint, update e destroy, algumas outras funções são realizadas. Primeiramente, é controlado o tamanho da tela de jogo na função onResize, cujos parâmetros são utilizados em onPaint. Além disso nela também se encontra a função checkEndGameConditions, que checa se o estado está em gameOver, além de checar se todos os blocos quebráveis já foram removidos, definindo assim se o jogador venceu ou não. Por fim, caso o jogador complete o nível 1, automaticamente carregará o nível 2, e o mesmo para o nível 3, entretanto, o nível também pode ser selecionado no menu.
 
-## Installation and usage
 
-Start by cloning the repository:
 
-    # Get abcg repo
-    git clone https://github.com/hbatagelo/abcg.git
 
-    # Enter the directory
-    cd abcg
-
-Follow the instructions below to build the "Hello, World!" sample located in `abcg/examples/helloworld`.
-
-### Windows
-
-*   Run `build-vs.bat` for building with the Visual Studio 2022 toolchain.
-*   Run `build.bat` for building with GCC (MinGW-w64).
-
-`build-vs.bat` and `build.bat` accept two optional arguments: (1) the build type, which is `Release` by default, and (2) an extra CMake option. For example, for a `Debug` build with `-DENABLE_CONAN=ON` using VS 2022, run
-
-    build-vs.bat Debug -DENABLE_CONAN=ON
-
-### Linux and macOS
-
-Run `./build.sh`.
-
-The script accepts two optional arguments: (1) the build type, which is `Release` by default, and (2) an extra CMake option. For example, for a `Debug` build with `-DENABLE_CONAN=ON`, run
-
-    ./build.sh Debug -DENABLE_CONAN=ON
-
-### WebAssembly
-
-1.  Run `build-wasm.bat` (Windows) or `./build-wasm.sh` (Linux/macOS).
-2.  Run `runweb.bat` (Windows) or `./runweb.sh` (Linux/macOS) for setting up a local web server.
-3.  Open <http://localhost:8080/helloworld.html>.
-
-***
-
-## Docker setup
-
-ABCg can be built in a [Docker](https://www.docker.com/) container. The Dockerfile provided is based on Ubuntu 22.04 and includes Emscripten.
-
-1.  Create the Docker image (`abcg`):
-
-        sudo docker build -t abcg .
-
-2.  Create the container (`abcg_container`):
-
-        sudo docker create -it \
-          -p 8080:8080 \
-          -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-          -e DISPLAY \
-          --name abcg_container abcg
-
-3.  Start the container:
-
-        sudo docker start -ai abcg_container
-
-    On NVIDIA GPUs, install the [NVIDIA Container Toolkit](https://github.com/NVIDIA/nvidia-docker) to allow the container to use the host's NVIDIA driver and X server. Expose the X server with `sudo xhost +local:root` before starting the container.
-
-***
-
-## License
-
-ABCg is licensed under the MIT License. See [LICENSE](https://github.com/hbatagelo/abcg/blob/main/LICENSE) for more information.
