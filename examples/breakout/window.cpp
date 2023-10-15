@@ -42,7 +42,6 @@ void Window::onCreate() {
     throw abcg::RuntimeError("Cannot load font file");
   }
 
-  // Create program to render the other objects
   m_program =
       abcg::createOpenGLProgram({{.source = assetsPath + "objects.vert",
                                   .stage = abcg::ShaderStage::Vertex},
@@ -139,18 +138,20 @@ void Window::onPaintUI() {
 
   {
     // Window begin
-    auto const size{ImVec2(300, 160)};
-    auto const position{ImVec2(m_viewportSize.x - 300, 0)};
+    auto const size{ImVec2(150, 200)};
+    auto const position{ImVec2(m_viewportSize.x - 150, 0)};
 
     ImGui::SetNextWindowPos(position);
     ImGui::SetNextWindowSize(size);
 
-    ImGui::Begin("Breakout Config", nullptr,
-                 ImGuiWindowFlags_NoNavFocus |
-                     ImGuiWindowFlags_NoFocusOnAppearing);
-    // Slider from 0.0f to 1.0f
-    ImGui::SliderFloat("Ball Speed", &m_ball.m_velocityFactor, 0.2f, 4.00f);
-    ImGui::SliderFloat("Bar Speed", &m_bar.m_velocityFactor, 0.2f, 4.00f);
+    ImGuiWindowFlags const flags{ImGuiWindowFlags_NoNavFocus |
+                                 ImGuiWindowFlags_NoFocusOnAppearing};
+
+    ImGui::Begin("Options", nullptr, flags);
+    ImGui::Text("Ball speed");
+    ImGui::SliderFloat(" ", &m_ball.m_velocityFactor, 0.2f, 2.00f);
+    ImGui::Text("Bar speed");
+    ImGui::SliderFloat("  ", &m_bar.m_velocityFactor, 0.2f, 4.00f);
     if (ImGui::Selectable("Level 1", m_gameData.m_level == Level::Level1)) {
       m_gameData.m_level = Level::Level1;
       restart();
@@ -163,7 +164,7 @@ void Window::onPaintUI() {
       m_gameData.m_level = Level::Level3;
       restart();
     }
-    // Window end
+
     ImGui::End();
   }
 }

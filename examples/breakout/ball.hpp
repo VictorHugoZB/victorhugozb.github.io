@@ -20,7 +20,7 @@ public:
   bool m_dead{false};
   glm::vec2 m_translation{};
   glm::vec2 m_velocity{};
-  float m_velocityFactor{1.5f};
+  float m_velocityFactor{1.2f};
 
   float m_pointSize{8.0f};
   glm::vec4 m_color{1};

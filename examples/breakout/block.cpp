@@ -32,6 +32,8 @@ bool checkIsDestructable(int row, int position, Level level) {
     return std::find(level3Indestructables.begin(), level3Indestructables.end(),
                      blockStr) == level3Indestructables.end();
   }
+
+  return false;
 }
 
 bool isInYRange(Ball ball, Blocks::Block block) {
@@ -60,7 +62,6 @@ void Blocks::create(GLuint program, Level level) {
   m_scaleLoc = abcg::glGetUniformLocation(m_program, "scale");
   m_translationLoc = abcg::glGetUniformLocation(m_program, "translation");
 
-  // Create asteroids
   m_blocks.clear();
   m_blocks.resize(8 * 5);
 
@@ -86,7 +87,7 @@ void Blocks::paint() {
 
     abcg::glUniform2fv(m_translationLoc, 1, &block.m_translation.x);
 
-    abcg::glDrawElements(GL_TRIANGLES, 12 * 3, GL_UNSIGNED_INT, nullptr);
+    abcg::glDrawElements(GL_TRIANGLES, 2 * 3, GL_UNSIGNED_INT, nullptr);
 
     abcg::glBindVertexArray(0);
   }
@@ -148,15 +149,14 @@ Blocks::Block Blocks::makeBlock(float scale, int row, int position,
   block.m_translation = glm::vec2{xTranslation, yTranslation};
   block.m_destructable = destructable;
 
-  // Create geometry data
-  // clang-format off
   std::array positions{
-      glm::vec2{-1.00f, +0.30f}, glm::vec2{-1.00f, -0.30f},
-      glm::vec2{+1.00f, -0.30f}, glm::vec2{+1.00, +0.30f},
-    };
+      glm::vec2{-1.00f, +0.30f},
+      glm::vec2{-1.00f, -0.30f},
+      glm::vec2{+1.00f, -0.30f},
+      glm::vec2{+1.00, +0.30f},
+  };
 
-  std::array const indices{0, 1, 2,
-                           2, 3, 0};
+  std::array const indices{0, 1, 2, 2, 3, 0};
 
   // Generate VBO
   abcg::glGenBuffers(1, &block.m_VBO);

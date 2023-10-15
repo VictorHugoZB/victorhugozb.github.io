@@ -17,15 +17,17 @@ void Border::create(GLuint program) {
 
   m_translation = glm::vec2{0, 0};
 
-  // clang-format off
   std::array positions{
-      glm::vec2{-1.00f, -1.00f}, glm::vec2{-1.00f, +1.00f},
-      glm::vec2{+1.00f, +1.00f}, glm::vec2{+1.00, -1.00f},
-    };
+      glm::vec2{-1.00f, -1.00f},
+      glm::vec2{-1.00f, +1.00f},
+      glm::vec2{+1.00f, +1.00f},
+      glm::vec2{+1.00, -1.00f},
+  };
 
   abcg::glGenBuffers(1, &m_VBO);
   abcg::glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-  abcg::glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions, GL_STATIC_DRAW);
+  abcg::glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions,
+                     GL_STATIC_DRAW);
   abcg::glBindBuffer(GL_ARRAY_BUFFER, 0);
 
   auto const positionAttribute{
@@ -62,9 +64,7 @@ void Border::paint(const GameData &gameData) {
   abcg::glUseProgram(0);
 }
 
-void Border::update() {
-  return;
-}
+void Border::update() { return; }
 
 void Border::destroy() {
   abcg::glDeleteBuffers(1, &m_VBO);
