@@ -1,5 +1,6 @@
 # Computação Gráfica - Atividade 1
 ### Victor Hugo Zaninette Bernardino - RA: 11201811443
+### Guilherme Cesario Scagnolato - RA: 11201812319
 
 ## Descrição do projeto
 
