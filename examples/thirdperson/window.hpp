@@ -4,6 +4,7 @@
 #include "abcgOpenGL.hpp"
 
 #include "camera.hpp"
+#include "gamedata.hpp"
 #include "ground.hpp"
 #include "protagonist.hpp"
 
@@ -31,6 +32,8 @@ private:
   GLint m_colorLocation{};
 
   Camera m_camera;
+  GameData m_gameData;
+
   float m_dollySpeed{};
   float m_truckSpeed{};
   float m_panSpeed{};

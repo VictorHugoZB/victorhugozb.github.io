@@ -36,7 +36,6 @@ void Ground::paint() {
 
   // Draw a grid of 2N+1 x 2N+1 tiles on the xz plane, centered around the
   // origin
-  auto const N{5};
   for (auto const z : iter::range(-N, N + 1)) {
     for (auto const x : iter::range(-N, N + 1)) {
       // Set model matrix as a translation matrix
@@ -45,14 +44,21 @@ void Ground::paint() {
       abcg::glUniformMatrix4fv(m_modelMatrixLoc, 1, GL_FALSE, &model[0][0]);
 
       // Set color (checkerboard pattern)
-      auto const gray{(z + x) % 2 == 0 ? 1.0f : 0.5f};
-      abcg::glUniform4f(m_colorLoc, gray, gray, gray, 1.0f);
+      auto const green{(2 * x + 3 * z) % 7 ? 0.8f : 1.0f};
+      abcg::glUniform4f(m_colorLoc, 0.0f, green, 0.0f, 1.0f);
 
       abcg::glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
   }
 
   abcg::glBindVertexArray(0);
+}
+
+bool Ground::checkCollision(glm::vec3 position) {
+  if (position.x > N || position.x < -N || position.z > N || position.z < -N) {
+    return true;
+  }
+  return false;
 }
 
 void Ground::destroy() {

@@ -5,43 +5,45 @@
 void Window::onEvent(SDL_Event const &event) {
   if (event.type == SDL_KEYDOWN) {
     if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w)
-      m_dollySpeed = 1.0f;
+      m_gameData.m_input.set(gsl::narrow<size_t>(Input::Up));
     if (event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_s)
-      m_dollySpeed = -1.0f;
+      m_gameData.m_input.set(gsl::narrow<size_t>(Input::Down));
     if (event.key.keysym.sym == SDLK_LEFT || event.key.keysym.sym == SDLK_a)
-      m_panSpeed = -1.0f;
+      m_gameData.m_input.set(gsl::narrow<size_t>(Input::Left));
     if (event.key.keysym.sym == SDLK_RIGHT || event.key.keysym.sym == SDLK_d)
-      m_panSpeed = 1.0f;
-    if (event.key.keysym.sym == SDLK_q)
-      m_truckSpeed = -1.0f;
-    if (event.key.keysym.sym == SDLK_e)
-      m_truckSpeed = 1.0f;
+      m_gameData.m_input.set(gsl::narrow<size_t>(Input::Right));
   }
   if (event.type == SDL_KEYUP) {
-    if ((event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w) &&
-        m_dollySpeed > 0)
-      m_dollySpeed = 0.0f;
-    if ((event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_s) &&
-        m_dollySpeed < 0)
-      m_dollySpeed = 0.0f;
-    if ((event.key.keysym.sym == SDLK_LEFT || event.key.keysym.sym == SDLK_a) &&
-        m_panSpeed < 0)
-      m_panSpeed = 0.0f;
-    if ((event.key.keysym.sym == SDLK_RIGHT ||
-         event.key.keysym.sym == SDLK_d) &&
-        m_panSpeed > 0)
-      m_panSpeed = 0.0f;
-    if (event.key.keysym.sym == SDLK_q && m_truckSpeed < 0)
-      m_truckSpeed = 0.0f;
-    if (event.key.keysym.sym == SDLK_e && m_truckSpeed > 0)
-      m_truckSpeed = 0.0f;
+    if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w)
+      m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Up));
+    if (event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_s)
+      m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Down));
+    if (event.key.keysym.sym == SDLK_LEFT || event.key.keysym.sym == SDLK_a)
+      m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Left));
+    if (event.key.keysym.sym == SDLK_RIGHT || event.key.keysym.sym == SDLK_d)
+      m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Right));
+  }
+
+  glm::ivec2 mousePosition;
+  SDL_GetMouseState(&mousePosition.x, &mousePosition.y);
+
+  if (event.type == SDL_MOUSEMOTION) {
+    m_camera.pan(mousePosition, m_protagonist.m_position);
+  }
+  if (event.type == SDL_MOUSEBUTTONDOWN &&
+      event.button.button == SDL_BUTTON_LEFT) {
+    m_camera.mousePress(mousePosition);
+  }
+  if (event.type == SDL_MOUSEBUTTONUP &&
+      event.button.button == SDL_BUTTON_LEFT) {
+    m_camera.mouseRelease(mousePosition);
   }
 }
 
 void Window::onCreate() {
   auto const &assetsPath{abcg::Application::getAssetsPath()};
 
-  abcg::glClearColor(0, 0, 0, 1);
+  abcg::glClearColor(0.494f, 0.494f, 1.0f, 1);
 
   // Enable depth buffering
   abcg::glEnable(GL_DEPTH_TEST);
@@ -87,6 +89,7 @@ void Window::onPaintUI() { abcg::OpenGLWindow::onPaintUI(); }
 
 void Window::onResize(glm::ivec2 const &size) {
   m_viewportSize = size;
+  m_camera.m_viewportSize = size;
   m_camera.computeProjectionMatrix(size);
 }
 
@@ -103,8 +106,6 @@ void Window::onDestroy() {
 void Window::onUpdate() {
   auto const deltaTime{gsl::narrow_cast<float>(getDeltaTime())};
 
-  // Update LookAt camera
-  m_camera.dolly(m_dollySpeed * deltaTime);
-  m_camera.truck(m_truckSpeed * deltaTime);
-  m_camera.pan(m_panSpeed * deltaTime);
+  m_protagonist.update(m_gameData, deltaTime);
+  m_camera.update(m_gameData, deltaTime, m_protagonist);
 }

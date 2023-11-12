@@ -1,6 +1,19 @@
 #include "camera.hpp"
 
+#include <glm/fwd.hpp>
+#include <glm/geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <gsl/gsl_util>
+
+glm::mat4 Camera::getRotation() const {
+  if (m_mouseTracking)
+    return m_rotation;
+
+  // Rotate by velocity when not tracking to simulate an inertia-free rotation
+  auto const angle{m_velocity * gsl::narrow_cast<float>(m_lastTime.elapsed())};
+
+  return glm::rotate(glm::mat4(1.0f), angle, m_axis) * m_rotation;
+}
 
 void Camera::computeProjectionMatrix(glm::vec2 const &size) {
   m_projMatrix = glm::mat4(1.0f);
@@ -12,39 +25,83 @@ void Camera::computeViewMatrix() {
   m_viewMatrix = glm::lookAt(m_eye, m_at, m_up);
 }
 
-void Camera::dolly(float speed) {
-  // Compute forward vector (view direction)
-  auto const forward{glm::normalize(m_at - m_eye)};
+void Camera::pan(glm::ivec2 const &position, glm::vec3 protagonistPosition) {
+  // if (!m_mouseTracking)
+  //   return;
 
-  // Move eye and center forward (speed > 0) or backward (speed < 0)
-  m_eye += forward * speed;
-  m_at += forward * speed;
+  // auto const currentPosition{project(position)};
 
-  computeViewMatrix();
+  // // Rotation axis
+  // m_axis = glm::cross(m_lastPosition, currentPosition);
+
+  // // Rotation angle
+  // auto const angle{glm::length(m_axis)};
+
+  // m_axis = glm::normalize(m_axis);
+
+  // // Concatenate rotation: R_old = R_new * R_old
+  // m_rotation = glm::rotate(glm::mat4(1.0f), angle, m_axis) * m_rotation;
+
+  // m_lastPosition = currentPosition;
+
+  // glm::mat4 transform{1.0f};
+
+  // printf("ROTATING\n");
+  // // Rotate camera around its local y axis
+  // transform = glm::translate(transform, protagonistPosition);
+  // transform = m_rotation;
+  // transform = glm::translate(transform, -protagonistPosition);
+
+  // m_at = transform * glm::vec4(m_at, 1.0f);
+
+  // computeViewMatrix();
 }
 
-void Camera::truck(float speed) {
-  // Compute forward vector (view direction)
-  auto const forward{glm::normalize(m_at - m_eye)};
-  // Compute vector to the left
-  auto const left{glm::cross(m_up, forward)};
-
-  // Move eye and center to the left (speed < 0) or to the right (speed > 0)
-  m_at -= left * speed;
-  m_eye -= left * speed;
-
-  computeViewMatrix();
+void Camera::mousePress(glm::ivec2 const &position) {
+  m_rotation = getRotation();
+  m_mouseTracking = true;
+  m_lastPosition = project(position);
+  m_velocity = 0.0f;
 }
 
-void Camera::pan(float speed) {
-  glm::mat4 transform{1.0f};
+void Camera::mouseRelease(glm::ivec2 const &position) {
+  m_mouseTracking = false;
+}
 
-  // Rotate camera around its local y axis
-  transform = glm::translate(transform, m_eye);
-  transform = glm::rotate(transform, -speed, m_up);
-  transform = glm::translate(transform, -m_eye);
+glm::vec3 Camera::project(glm::vec2 const &position) const {
+  // Convert from window coordinates to NDC
+  auto projected{glm::vec3(
+      2.0f * position.x / gsl::narrow<float>(m_viewportSize.x) - 1.0f,
+      1.0f - 2.0f * position.y / gsl::narrow<float>(m_viewportSize.y), 0.0f)};
 
-  m_at = transform * glm::vec4(m_at, 1.0f);
+  // Project to centered unit hemisphere
+  if (auto const squaredLength{glm::length2(projected)};
+      squaredLength >= 1.0f) {
+    // Outside the sphere
+    projected = glm::normalize(projected);
+  } else {
+    // Inside the sphere
+    projected.z = std::sqrt(1.0f - squaredLength);
+  }
+
+  return projected;
+}
+
+void Camera::update(GameData const &gameData, float deltaTime,
+                    Protagonist protagonist) {
+  if (gameData.m_input[static_cast<size_t>(Input::Left)])
+    m_eye.x -= 2.0f * deltaTime * -1;
+  if (gameData.m_input[static_cast<size_t>(Input::Right)])
+    m_eye.x += 2.0f * deltaTime * -1;
+  if (gameData.m_input[static_cast<size_t>(Input::Up)])
+    m_eye.z += 2.0f * deltaTime;
+  if (gameData.m_input[static_cast<size_t>(Input::Down)])
+    m_eye.z -= 2.0f * deltaTime;
+
+  auto const protagonistPosition = protagonist.m_position;
+
+  m_at = {protagonistPosition.x, protagonistPosition.y + 0.5f,
+          protagonistPosition.z};
 
   computeViewMatrix();
 }

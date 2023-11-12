@@ -8,6 +8,7 @@ public:
   void create(GLuint program);
   void paint();
   void destroy();
+  bool checkCollision(glm::vec3 position);
 
 private:
   GLuint m_VAO{};
@@ -15,6 +16,8 @@ private:
 
   GLint m_modelMatrixLoc{};
   GLint m_colorLoc{};
+
+  int const N{5};
 };
 
 #endif

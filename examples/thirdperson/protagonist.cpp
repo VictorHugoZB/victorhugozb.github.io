@@ -1,4 +1,6 @@
 #include "protagonist.hpp"
+#include "camera.hpp"
+#include <cstdio>
 
 template <> struct std::hash<Vertex> {
   size_t operator()(Vertex const &vertex) const noexcept {
@@ -10,7 +12,7 @@ template <> struct std::hash<Vertex> {
 void Protagonist::create(GLuint program) {
   // Load model
   auto const &assetsPath{abcg::Application::getAssetsPath()};
-  loadModelFromFile(assetsPath + "bunny.obj");
+  loadModelFromFile(assetsPath + "pikachu.obj");
 
   m_viewMatrixLocation = abcg::glGetUniformLocation(program, "viewMatrix");
   m_projMatrixLocation = abcg::glGetUniformLocation(program, "projMatrix");
@@ -58,16 +60,29 @@ void Protagonist::paint() {
 
   // Draw white bunny
   glm::mat4 model{1.0f};
-  model = glm::translate(model, glm::vec3(-1.0f, 0.0f, 0.0f));
-  model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1, 0));
-  model = glm::scale(model, glm::vec3(0.5f));
+  model = glm::translate(model, m_position);
+  model = glm::rotate(model, glm::radians(0.0f), glm::vec3(0, 1, 0));
+  model = glm::scale(model, glm::vec3(0.15f));
 
   abcg::glUniformMatrix4fv(m_modelMatrixLocation, 1, GL_FALSE, &model[0][0]);
-  abcg::glUniform4f(m_colorLocation, 1.0f, 1.0f, 1.0f, 1.0f);
+  abcg::glUniform4f(m_colorLocation, 1.0f, 1.0f, 0.0f, 1.0f);
   abcg::glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT,
                        nullptr);
 
   abcg::glBindVertexArray(0);
+}
+
+void Protagonist::update(GameData const &gameData, float deltaTime) {
+
+  // control bunny with WASD
+  if (gameData.m_input[static_cast<size_t>(Input::Left)])
+    m_position.x -= 2.0f * deltaTime * -1;
+  if (gameData.m_input[static_cast<size_t>(Input::Right)])
+    m_position.x += 2.0f * deltaTime * -1;
+  if (gameData.m_input[static_cast<size_t>(Input::Up)])
+    m_position.z += 2.0f * deltaTime;
+  if (gameData.m_input[static_cast<size_t>(Input::Down)])
+    m_position.z -= 2.0f * deltaTime;
 }
 
 void Protagonist::destroy() {

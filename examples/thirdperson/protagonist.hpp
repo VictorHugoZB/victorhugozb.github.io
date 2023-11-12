@@ -2,6 +2,8 @@
 #define PROTAGONIST_HPP_
 
 #include "abcgOpenGL.hpp"
+#include "gamedata.hpp"
+#include "ground.hpp"
 
 struct Vertex {
   glm::vec3 position;
@@ -13,8 +15,11 @@ class Protagonist {
 public:
   void create(GLuint program);
   void paint();
+  void update(GameData const &gameData, float deltaTime);
   void destroy();
   void loadModelFromFile(std::string_view path);
+
+  glm::vec3 m_position{0.0f, 0.0f, 0.0f};
 
 private:
   GLuint m_VAO{};
