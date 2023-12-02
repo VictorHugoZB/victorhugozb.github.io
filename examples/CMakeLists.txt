@@ -2,5 +2,5 @@
 # add_subdirectory(sierpinski)
 # add_subdirectory(asteroids4)
 # add_subdirectory(breakout)
-add_subdirectory(cube)
+add_subdirectory(idk)
 

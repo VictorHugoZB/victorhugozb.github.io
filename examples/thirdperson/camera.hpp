@@ -41,7 +41,10 @@ private:
 
   glm::vec3 m_axis{1.0f};
   glm::mat4 m_rotation{1.0f};
+
   float m_velocity{2.0f};
+  float m_distanceFromPlayer{20.0f};
+  float m_angleAroundPlayer{0.0f};
 
   glm::vec3 m_lastPosition{};
   abcg::Timer m_lastTime{};

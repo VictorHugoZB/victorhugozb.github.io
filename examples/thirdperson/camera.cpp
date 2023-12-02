@@ -89,14 +89,8 @@ glm::vec3 Camera::project(glm::vec2 const &position) const {
 
 void Camera::update(GameData const &gameData, float deltaTime,
                     Protagonist protagonist) {
-  if (gameData.m_input[static_cast<size_t>(Input::Left)])
-    m_eye.x -= 2.0f * deltaTime * -1;
-  if (gameData.m_input[static_cast<size_t>(Input::Right)])
-    m_eye.x += 2.0f * deltaTime * -1;
-  if (gameData.m_input[static_cast<size_t>(Input::Up)])
-    m_eye.z += 2.0f * deltaTime;
-  if (gameData.m_input[static_cast<size_t>(Input::Down)])
-    m_eye.z -= 2.0f * deltaTime;
+
+  m_angleAroundPlayer -= 0.1f * deltaTime;
 
   auto const protagonistPosition = protagonist.m_position;
 
