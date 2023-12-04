@@ -19,6 +19,9 @@ public:
   void destroy();
   void loadModelFromFile(std::string_view path);
 
+  glm::vec3 getDirection();
+  glm::vec3 getPosition();
+
 private:
   GLuint m_VAO{};
   GLuint m_VBO{};

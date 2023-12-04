@@ -32,20 +32,24 @@ void Window::onEvent(SDL_Event const &event) {
       m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Right));
   }
 
-  // glm::ivec2 mousePosition;
-  // SDL_GetMouseState(&mousePosition.x, &mousePosition.y);
+  if (event.type == SDL_MOUSEWHEEL) {
+    m_camera.zoom(event.wheel.y);
+  }
 
-  // if (event.type == SDL_MOUSEMOTION) {
-  //   m_camera.pan(mousePosition, m_protagonist.m_position);
-  // }
-  // if (event.type == SDL_MOUSEBUTTONDOWN &&
-  //     event.button.button == SDL_BUTTON_LEFT) {
-  //   m_camera.mousePress(mousePosition);
-  // }
-  // if (event.type == SDL_MOUSEBUTTONUP &&
-  //     event.button.button == SDL_BUTTON_LEFT) {
-  //   m_camera.mouseRelease(mousePosition);
-  // }
+  glm::ivec2 mousePosition;
+  SDL_GetMouseState(&mousePosition.x, &mousePosition.y);
+
+  if (event.type == SDL_MOUSEMOTION) {
+    m_camera.mouseMove(mousePosition);
+  }
+  if (event.type == SDL_MOUSEBUTTONDOWN &&
+      event.button.button == SDL_BUTTON_LEFT) {
+    m_camera.mousePress(mousePosition);
+  }
+  if (event.type == SDL_MOUSEBUTTONUP &&
+      event.button.button == SDL_BUTTON_LEFT) {
+    m_camera.mouseRelease();
+  }
 }
 
 void Window::onCreate() {
@@ -71,9 +75,6 @@ void Window::onCreate() {
   m_projMatrixLocation = abcg::glGetUniformLocation(m_program, "projMatrix");
   m_modelMatrixLocation = abcg::glGetUniformLocation(m_program, "modelMatrix");
   m_colorLocation = abcg::glGetUniformLocation(m_program, "color");
-
-  // Load model
-  loadModelFromFile(assetsPath + "bunny.obj");
 
   // Generate VBO
   abcg::glGenBuffers(1, &m_VBO);
@@ -111,58 +112,6 @@ void Window::onCreate() {
   abcg::glBindVertexArray(0);
 }
 
-void Window::loadModelFromFile(std::string_view path) {
-  tinyobj::ObjReader reader;
-
-  if (!reader.ParseFromFile(path.data())) {
-    if (!reader.Error().empty()) {
-      throw abcg::RuntimeError(
-          fmt::format("Failed to load model {} ({})", path, reader.Error()));
-    }
-    throw abcg::RuntimeError(fmt::format("Failed to load model {}", path));
-  }
-
-  if (!reader.Warning().empty()) {
-    fmt::print("Warning: {}\n", reader.Warning());
-  }
-
-  auto const &attributes{reader.GetAttrib()};
-  auto const &shapes{reader.GetShapes()};
-
-  m_vertices.clear();
-  m_indices.clear();
-
-  // A key:value map with key=Vertex and value=index
-  std::unordered_map<Vertex, GLuint> hash{};
-
-  // Loop over shapes
-  for (auto const &shape : shapes) {
-    // Loop over indices
-    for (auto const offset : iter::range(shape.mesh.indices.size())) {
-      // Access to vertex
-      auto const index{shape.mesh.indices.at(offset)};
-
-      // Vertex position
-      auto const startIndex{3 * index.vertex_index};
-      auto const vx{attributes.vertices.at(startIndex + 0)};
-      auto const vy{attributes.vertices.at(startIndex + 1)};
-      auto const vz{attributes.vertices.at(startIndex + 2)};
-
-      Vertex const vertex{.position = {vx, vy, vz}};
-
-      // If map doesn't contain this vertex
-      if (!hash.contains(vertex)) {
-        // Add this index (size of m_vertices)
-        hash[vertex] = m_vertices.size();
-        // Add this vertex
-        m_vertices.push_back(vertex);
-      }
-
-      m_indices.push_back(hash[vertex]);
-    }
-  }
-}
-
 void Window::onPaint() {
   // Clear color buffer and depth buffer
   abcg::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -180,49 +129,6 @@ void Window::onPaint() {
 
   abcg::glBindVertexArray(m_VAO);
 
-  // Draw white bunny
-  glm::mat4 model{1.0f};
-  model = glm::translate(model, glm::vec3(-1.0f, 0.0f, 0.0f));
-  model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1, 0));
-  model = glm::scale(model, glm::vec3(0.5f));
-
-  abcg::glUniformMatrix4fv(m_modelMatrixLocation, 1, GL_FALSE, &model[0][0]);
-  abcg::glUniform4f(m_colorLocation, 1.0f, 1.0f, 1.0f, 1.0f);
-  abcg::glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT,
-                       nullptr);
-
-  // Draw yellow bunny
-  model = glm::mat4(1.0);
-  model = glm::translate(model, glm::vec3(0.0f, 0.0f, -1.0f));
-  model = glm::scale(model, glm::vec3(0.5f));
-
-  abcg::glUniformMatrix4fv(m_modelMatrixLocation, 1, GL_FALSE, &model[0][0]);
-  abcg::glUniform4f(m_colorLocation, 1.0f, 0.8f, 0.0f, 1.0f);
-  abcg::glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT,
-                       nullptr);
-
-  // Draw blue bunny
-  model = glm::mat4(1.0);
-  model = glm::translate(model, glm::vec3(1.0f, 0.0f, 0.0f));
-  model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0, 1, 0));
-  model = glm::scale(model, glm::vec3(0.5f));
-
-  abcg::glUniformMatrix4fv(m_modelMatrixLocation, 1, GL_FALSE, &model[0][0]);
-  abcg::glUniform4f(m_colorLocation, 0.0f, 0.8f, 1.0f, 1.0f);
-  abcg::glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT,
-                       nullptr);
-
-  // Draw red bunny
-  model = glm::mat4(1.0);
-  model = glm::scale(model, glm::vec3(0.1f));
-
-  abcg::glUniformMatrix4fv(m_modelMatrixLocation, 1, GL_FALSE, &model[0][0]);
-  abcg::glUniform4f(m_colorLocation, 1.0f, 0.25f, 0.25f, 1.0f);
-  abcg::glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT,
-                       nullptr);
-
-  abcg::glBindVertexArray(0);
-
   // Draw ground
   m_ground.paint();
 
@@ -236,6 +142,7 @@ void Window::onPaintUI() { abcg::OpenGLWindow::onPaintUI(); }
 
 void Window::onResize(glm::ivec2 const &size) {
   m_viewportSize = size;
+  m_camera.resizeViewport(size);
   m_camera.computeProjectionMatrix(size);
 }
 
@@ -254,7 +161,8 @@ void Window::onUpdate() {
   m_protagonist.update(m_gameData, deltaTime);
 
   // Update LookAt camera
-  m_camera.dolly(m_dollySpeed * deltaTime);
-  m_camera.truck(m_truckSpeed * deltaTime);
-  m_camera.pan(m_panSpeed * deltaTime);
+  m_camera.update(m_protagonist);
+  // m_camera.dolly(m_dollySpeed * deltaTime);
+  // m_camera.truck(m_truckSpeed * deltaTime);
+  // m_camera.pan(m_panSpeed * deltaTime);
 }

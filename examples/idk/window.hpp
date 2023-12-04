@@ -42,8 +42,6 @@ private:
 
   std::vector<Vertex> m_vertices;
   std::vector<GLuint> m_indices;
-
-  void loadModelFromFile(std::string_view path);
 };
 
 #endif

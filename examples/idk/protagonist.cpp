@@ -63,7 +63,6 @@ void Protagonist::create(GLuint program) {
 void Protagonist::paint() {
   abcg::glBindVertexArray(m_VAO);
 
-  // Draw white bunny
   glm::mat4 model{1.0f};
   model = glm::translate(model, m_position);
   model = glm::rotate(model, m_angle, glm::vec3(0, 1, 0));
@@ -78,7 +77,6 @@ void Protagonist::paint() {
 }
 
 void Protagonist::update(GameData const &gameData, float deltaTime) {
-  printf("m_angle: %f\n", m_angle);
   if (gameData.m_input[static_cast<size_t>(Input::Left)]) {
     m_angle = glm::wrapAngle(m_angle + glm::radians(135.0f) * deltaTime);
     m_direction = glm::vec3(-glm::cos(m_angle + std::numbers::pi / 2), 0.0f,
@@ -90,9 +88,9 @@ void Protagonist::update(GameData const &gameData, float deltaTime) {
                             glm::sin(m_angle + std::numbers::pi / 2));
   }
   if (gameData.m_input[static_cast<size_t>(Input::Up)])
-    m_position += m_direction * deltaTime;
+    m_position += m_direction * deltaTime * 2.0f;
   if (gameData.m_input[static_cast<size_t>(Input::Down)])
-    m_position -= m_direction * deltaTime;
+    m_position -= m_direction * deltaTime * 2.0f;
 }
 
 void Protagonist::destroy() {
@@ -152,3 +150,6 @@ void Protagonist::loadModelFromFile(std::string_view path) {
     }
   }
 }
+
+glm::vec3 Protagonist::getDirection() { return m_direction; }
+glm::vec3 Protagonist::getPosition() { return m_position; }
