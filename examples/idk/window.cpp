@@ -55,7 +55,7 @@ void Window::onEvent(SDL_Event const &event) {
 void Window::onCreate() {
   auto const &assetsPath{abcg::Application::getAssetsPath()};
 
-  abcg::glClearColor(0, 0, 0, 1);
+  abcg::glClearColor(0.565, 0.565, 1, 1);
 
   // Enable depth buffering
   abcg::glEnable(GL_DEPTH_TEST);
