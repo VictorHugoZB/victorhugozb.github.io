@@ -14,14 +14,14 @@ ABCg is a lightweight C++ framework that simplifies the development of 3D graphi
 
 ---
 
-# Atividade 02 - CuboMaluco
+# Atividade 03 - Minecraft
 
 ![CuboMalucoEstatico](README/CuboMalucoEstatico.png)
 
 ## Descrição geral
 
-- Este projeto foi desenvolvido umcom o objetivo de produzir uma aplicação 3D, e aplicar transformações geométricas a com o uso da lib ABCg.
-- Portanto desenvolvemos um cubo maluco, que começa de forma estatica, ao liberar as animações ele começa a se chocar e se mover de forma que cada colisão mude o eixo que os seus pedaços são lançados e, por ser um cubo maluco, todas suas peças ficam girando enquanto ele se movimenta.
+- Este projeto foi desenvolvido umcom o objetivo de produzir uma aplicação 3D, e aplicar transformações geométricas a com o uso da lib ABCg, utilizando texturas e iluminação.
+- Portanto desenvolvemos um cenário com texturas do jogo minecraft, onde são renderizadas algumas árvores e blocos. Além disso é possível controlar o personagem sobre uma perspectiva em terceira pessoa.
 - para executar rode ```./build.sh && ./build/bin/helloworld/helloworld```
 ## Implementação
 
