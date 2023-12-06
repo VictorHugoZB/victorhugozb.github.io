@@ -7,6 +7,7 @@
 #include "gamedata.hpp"
 #include "ground.hpp"
 #include "protagonist.hpp"
+#include "trackball.hpp"
 
 class Window : public abcg::OpenGLWindow {
 protected:
@@ -25,16 +26,10 @@ private:
   GLuint m_VBO{};
   GLuint m_EBO{};
   GLuint m_program{};
-
-  GLint m_viewMatrixLocation{};
-  GLint m_projMatrixLocation{};
-  GLint m_modelMatrixLocation{};
-  GLint m_colorLocation{};
+  GLuint m_program_model{};
+  TrackBall m_trackBallLight;
 
   Camera m_camera;
-  float m_dollySpeed{};
-  float m_truckSpeed{};
-  float m_panSpeed{};
 
   Ground m_ground;
   GameData m_gameData;

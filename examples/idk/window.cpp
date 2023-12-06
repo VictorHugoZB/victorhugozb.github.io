@@ -50,6 +50,20 @@ void Window::onEvent(SDL_Event const &event) {
       event.button.button == SDL_BUTTON_LEFT) {
     m_camera.mouseRelease();
   }
+
+  if (event.type == SDL_MOUSEMOTION) {
+    m_trackBallLight.mouseMove(mousePosition);
+  }
+  if (event.type == SDL_MOUSEBUTTONDOWN) {
+    if (event.button.button == SDL_BUTTON_RIGHT) {
+      m_trackBallLight.mousePress(mousePosition);
+    }
+  }
+  if (event.type == SDL_MOUSEBUTTONUP) {
+    if (event.button.button == SDL_BUTTON_RIGHT) {
+      m_trackBallLight.mouseRelease(mousePosition);
+    }
+  }
 }
 
 void Window::onCreate() {
@@ -61,79 +75,29 @@ void Window::onCreate() {
   abcg::glEnable(GL_DEPTH_TEST);
 
   // Create program
-  m_program =
-      abcg::createOpenGLProgram({{.source = assetsPath + "lookat.vert",
+  m_program_model =
+      abcg::createOpenGLProgram({{.source = assetsPath + "texture.vert",
                                   .stage = abcg::ShaderStage::Vertex},
-                                 {.source = assetsPath + "lookat.frag",
+                                 {.source = assetsPath + "texture.frag",
                                   .stage = abcg::ShaderStage::Fragment}});
 
-  m_ground.create(m_program);
-  m_protagonist.create(m_program);
-
-  // Get location of uniform variables
-  m_viewMatrixLocation = abcg::glGetUniformLocation(m_program, "viewMatrix");
-  m_projMatrixLocation = abcg::glGetUniformLocation(m_program, "projMatrix");
-  m_modelMatrixLocation = abcg::glGetUniformLocation(m_program, "modelMatrix");
-  m_colorLocation = abcg::glGetUniformLocation(m_program, "color");
-
-  // Generate VBO
-  abcg::glGenBuffers(1, &m_VBO);
-  abcg::glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-  abcg::glBufferData(GL_ARRAY_BUFFER,
-                     sizeof(m_vertices.at(0)) * m_vertices.size(),
-                     m_vertices.data(), GL_STATIC_DRAW);
-  abcg::glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-  // Generate EBO
-  abcg::glGenBuffers(1, &m_EBO);
-  abcg::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
-  abcg::glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                     sizeof(m_indices.at(0)) * m_indices.size(),
-                     m_indices.data(), GL_STATIC_DRAW);
-  abcg::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-  // Create VAO
-  abcg::glGenVertexArrays(1, &m_VAO);
-
-  // Bind vertex attributes to current VAO
-  abcg::glBindVertexArray(m_VAO);
-
-  abcg::glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-  auto const positionAttribute{
-      abcg::glGetAttribLocation(m_program, "inPosition")};
-  abcg::glEnableVertexAttribArray(positionAttribute);
-  abcg::glVertexAttribPointer(positionAttribute, 3, GL_FLOAT, GL_FALSE,
-                              sizeof(Vertex), nullptr);
-  abcg::glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-  abcg::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
-
-  // End of binding to current VAO
-  abcg::glBindVertexArray(0);
+  m_protagonist.create(m_program_model);
+  m_ground.create(m_program_model);
 }
 
 void Window::onPaint() {
   // Clear color buffer and depth buffer
   abcg::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
   abcg::glViewport(0, 0, m_viewportSize.x, m_viewportSize.y);
 
-  abcg::glUseProgram(m_program);
-
-  // Set uniform variables for viewMatrix and projMatrix
-  // These matrices are used for every scene object
-  abcg::glUniformMatrix4fv(m_viewMatrixLocation, 1, GL_FALSE,
-                           &m_camera.getViewMatrix()[0][0]);
-  abcg::glUniformMatrix4fv(m_projMatrixLocation, 1, GL_FALSE,
-                           &m_camera.getProjMatrix()[0][0]);
-
-  abcg::glBindVertexArray(m_VAO);
-
   // Draw ground
-  m_ground.paint();
+  abcg::glUseProgram(m_program_model);
+  m_ground.paint(m_camera.getViewMatrix(), m_camera.getProjMatrix(),
+                 m_trackBallLight.getRotation());
 
-  // Draw protagonist
-  m_protagonist.paint();
+  abcg::glUseProgram(m_program_model);
+  m_protagonist.paint(m_camera.getViewMatrix(), m_camera.getProjMatrix(),
+                      m_trackBallLight.getRotation());
 
   abcg::glUseProgram(0);
 }
@@ -144,13 +108,14 @@ void Window::onResize(glm::ivec2 const &size) {
   m_viewportSize = size;
   m_camera.resizeViewport(size);
   m_camera.computeProjectionMatrix(size);
+  m_trackBallLight.resizeViewport(size);
 }
 
 void Window::onDestroy() {
   m_ground.destroy();
   m_protagonist.destroy();
 
-  abcg::glDeleteProgram(m_program);
+  abcg::glDeleteProgram(m_program_model);
   abcg::glDeleteBuffers(1, &m_EBO);
   abcg::glDeleteBuffers(1, &m_VBO);
   abcg::glDeleteVertexArrays(1, &m_VAO);
@@ -162,7 +127,4 @@ void Window::onUpdate() {
 
   // Update LookAt camera
   m_camera.update(m_protagonist);
-  // m_camera.dolly(m_dollySpeed * deltaTime);
-  // m_camera.truck(m_truckSpeed * deltaTime);
-  // m_camera.pan(m_panSpeed * deltaTime);
 }
