@@ -45,7 +45,6 @@ private:
 
   glm::mat4 m_viewMatrix{1.0f};
   glm::mat4 m_projMatrix{1.0f};
-  float m_FOV{30.0f};
 
   GLuint m_program_obj{};
 

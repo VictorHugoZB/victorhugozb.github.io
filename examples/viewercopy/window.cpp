@@ -2,6 +2,7 @@
 
 #include <glm/gtc/random.hpp>
 #include <glm/gtx/fast_trigonometry.hpp>
+#define PI 3.14159265358979323846
 
 void Window::onEvent(SDL_Event const &event) {
   if (event.type == SDL_KEYDOWN) {
@@ -90,13 +91,13 @@ void Window::onUpdate() {
 
   if (m_gameData.m_input[static_cast<size_t>(Input::Left)]) {
     m_angle = glm::wrapAngle(m_angle + glm::radians(135.0f) * deltaTime);
-    m_direction = glm::vec3(-glm::cos(m_angle + std::numbers::pi), 0.0f,
-                            glm::sin(m_angle + std::numbers::pi));
+    m_direction =
+        glm::vec3(-glm::cos(m_angle + PI), 0.0f, glm::sin(m_angle + PI));
   }
   if (m_gameData.m_input[static_cast<size_t>(Input::Right)]) {
     m_angle = glm::wrapAngle(m_angle - glm::radians(135.0f) * deltaTime);
-    m_direction = glm::vec3(-glm::cos(m_angle + std::numbers::pi), 0.0f,
-                            glm::sin(m_angle + std::numbers::pi));
+    m_direction =
+        glm::vec3(-glm::cos(m_angle + PI), 0.0f, glm::sin(m_angle + PI));
   }
   if (m_gameData.m_input[static_cast<size_t>(Input::Up)])
     m_position += m_direction * deltaTime * 4.5f;
