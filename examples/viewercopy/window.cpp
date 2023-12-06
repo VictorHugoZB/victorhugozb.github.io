@@ -1,6 +1,5 @@
 #include "window.hpp"
 
-#include <glm/gtc/random.hpp>
 #include <glm/gtx/fast_trigonometry.hpp>
 #define PI 3.14159265358979323846
 
@@ -47,9 +46,6 @@ void Window::onEvent(SDL_Event const &event) {
 }
 
 void Window::onCreate() {
-  auto const seed{std::chrono::steady_clock::now().time_since_epoch().count()};
-  m_randomEngine.seed(seed);
-
   auto const assetsPath{abcg::Application::getAssetsPath()};
 
   abcg::glClearColor(0, 0.753, 0.961, 1);

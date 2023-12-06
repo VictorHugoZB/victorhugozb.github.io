@@ -2,7 +2,6 @@
 #define WINDOW_HPP_
 
 #include <glm/fwd.hpp>
-#include <random>
 #include <vector>
 
 #include "abcgOpenGL.hpp"
@@ -20,8 +19,6 @@ protected:
   void onDestroy() override;
 
 private:
-  std::default_random_engine m_randomEngine;
-
   glm::ivec2 m_viewportSize{};
 
   Model m_protagonist;
