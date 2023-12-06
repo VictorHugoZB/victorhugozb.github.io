@@ -14,7 +14,7 @@ ABCg is a lightweight C++ framework that simplifies the development of 3D graphi
 
 ---
 
-# Atividade 03 - Minecraft
+# Atividade 03 - Minecraft (já está no ar, falta readme...)
 
 ![CuboMalucoEstatico](README/CuboMalucoEstatico.png)
 
@@ -25,55 +25,14 @@ ABCg is a lightweight C++ framework that simplifies the development of 3D graphi
 - para executar rode ```./build.sh && ./build/bin/helloworld/helloworld```
 ## Implementação
 
-### `normal.vert`
+Abaixo será comentado as principais alterações realizadas no código.
 
-- O fragmento de código abaixo foi usado para gerar a coloração das faces do cubo. Aqui foi usado o conceito de vetor das faces, onde se o vetor é composto por apenas uma direção x, y, ou z, ele é renderizado com uma cor específica de acordo com a escala RGB01.
+### `texture.vert` e `texture.frag`
 
-```cpp
-void main() {
-  mat4 MVP = projMatrix * viewMatrix * modelMatrix;
-  gl_Position = MVP * vec4(inPosition, 1.0);
-  vec3 N = inNormal;
-  vec3 rubikColor = vec3(0.5, 0.5, 0.5);
+- Esses arquivos sofreram alterações simples em comparação com os desenvolvidos em aula, onde apenas foi removido parte do código que não seria utilizado no projeto. 
 
-  // fonte de cores: https://rgbcolorpicker.com/0-1
-  if (N.y > 0.0 && N.x == 0.0 && N.z == 0.0) {
-    // rgb01(0.49, 1, 0.949) face-ciano
-    rubikColor = vec3(0.49, 1, 0.949);
-  } else if (N.y < 0.0 && N.x == 0.0 && N.z == 0.0) {
-    // rgb01(0.988, 0, 0.871) face-pink
-    rubikColor = vec3(0.988, 0, 0.871);
-  } else if (N.x > 0.0 && N.y == 0.0 && N.z == 0.0) {
-    // rgb01(0.831, 1, 0) face-verde-neon
-    rubikColor = vec3(0.831, 1, 0);
-  } else if (N.x < 0.0 && N.y == 0.0 && N.z == 0.0) {
-    // rgb01(0.996, 0.776, 0.157) face-amarelo-dourado
-    rubikColor = vec3(0.996, 0.776, 0.157);
-  } else if (N.z > 0.0 && N.x == 0.0 && N.y == 0.0) {
-    // rgb01(1, 1, 1) face-branca
-    rubikColor = vec3(1.0, 1.0, 1.0);
-  } else if (N.z < 0.0 && N.x == 0.0 && N.y == 0.0) {
-    // rgb01(0.71, 0.216, 0.216) face-rubro
-    rubikColor = vec3(0.71, 0.216, 0.216);
-  }
-  fragColor = vec4(rubikColor, 1.0);
-}
-
-```
-### `normal.frag`
-- O **normal.frag** é o arquivo responsável pela renderização de pixels pela GPU, neste caso, ele apenas pega as cores dos pixels de entrada e devolve para a saída.
-```cpp
-#version 300 es
-
-precision mediump float;
-
-in vec4 fragColor;
-out vec4 outColor;
-
-void main() { outColor = fragColor; }
-```
-### `main.cpp, trackball.hpp e trackball.cpp`
-- Estes três arquivos são os mesmos das aulas. Eles sofreram poucas alterações, como por exemplo o tamanho da janela. Eles são responsáveis pela inicialização do programa/janela da aplicação, e pela função de trackball, que recebe as entradas do mouse e aplica uma matriz de rotação sobre o modelo, de forma a simular um trackball sobre o modelo.
+### `camera.cpp e camera.hpp`
+- Esses arquivos são responsáveis por controlar a camera em terceira pessoa do jogador. O método de update recebe a posição onde o jogador se encontra na tela.
 
 ### `window.hpp`
 
