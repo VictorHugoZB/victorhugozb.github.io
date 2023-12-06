@@ -46,9 +46,12 @@ void Window::onEvent(SDL_Event const &event) {
 }
 
 void Window::onCreate() {
+  auto const seed{std::chrono::steady_clock::now().time_since_epoch().count()};
+  m_randomEngine.seed(seed);
+
   auto const assetsPath{abcg::Application::getAssetsPath()};
 
-  abcg::glClearColor(0, 0, 0, 1);
+  abcg::glClearColor(0, 0.753, 0.961, 1);
   abcg::glEnable(GL_DEPTH_TEST);
 
   m_program_obj =
@@ -59,7 +62,8 @@ void Window::onCreate() {
 
   m_protagonist.loadDiffuseTexture(assetsPath +
                                    "maps/Minecraft_steve_skin.jpg");
-  m_protagonist.loadObj(assetsPath + "minecraft_steve.obj", false);
+  m_protagonist.setSize(10.0f);
+  m_protagonist.loadObj(assetsPath + "minecraft_steve.obj");
   m_protagonist.setupVAO(m_program_obj);
 
   m_Ka = m_protagonist.getKa();
@@ -75,6 +79,7 @@ void Window::onCreate() {
   m_sand.loadObj(assetsPath + "sand.obj");
   m_sand.setupVAO(m_program_obj);
 
+  m_tree.setSize(4.0f);
   m_tree.loadDiffuseTexture(assetsPath + "maps/Mineways2Skfb-RGBA.png");
   m_tree.loadObj(assetsPath + "Mineways2Skfb.obj");
   m_tree.setupVAO(m_program_obj);
@@ -190,6 +195,13 @@ void Window::onPaint() {
         m_sand.render();
       }
     }
+  }
+
+  for (auto const z : m_treePositions) {
+    glm::mat4 model{1.0f};
+    model = glm::translate(model, glm::vec3(z[0], 3.0f, z[1]));
+    abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &model[0][0]);
+    m_tree.render();
   }
 
   abcg::glUseProgram(0);

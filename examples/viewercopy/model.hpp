@@ -17,6 +17,7 @@ public:
   void loadObj(std::string_view path, bool standardize = true);
   void render(int numTriangles = -1) const;
   void setupVAO(GLuint program);
+  void setSize(float size) { m_size = size; };
   void destroy();
 
   [[nodiscard]] int getNumTriangles() const {
@@ -40,6 +41,8 @@ private:
   glm::vec4 m_Ks{};
   float m_shininess{};
   GLuint m_diffuseTexture{};
+
+  float m_size{1.0f};
 
   std::vector<Vertex> m_vertices;
   std::vector<GLuint> m_indices;
