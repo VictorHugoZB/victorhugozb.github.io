@@ -14,9 +14,9 @@ ABCg is a lightweight C++ framework that simplifies the development of 3D graphi
 
 ---
 
-# Atividade 03 - Minecraft (já está no ar, falta readme...)
+# Atividade 03 - Minecraft Arena
 
-![CuboMalucoEstatico](README/CuboMalucoEstatico.png)
+![CuboMalucoEstatico](README/minecraftArena.png)
 
 ## Descrição geral
 
@@ -29,7 +29,7 @@ Abaixo será comentado as principais alterações realizadas no código.
 
 ### `texture.vert` e `texture.frag`
 
-- Esses arquivos sofreram alterações simples em comparação com os desenvolvidos em aula, onde apenas foi removido parte do código que não seria utilizado no projeto. 
+- Esses arquivos sofreram alterações simples em comparação com os desenvolvidos em aula, onde apenas foi removido parte do código que não seria utilizado no projeto.
 
 ### `camera.cpp e camera.hpp`
 - Esses arquivos são responsáveis por controlar a camera em terceira pessoa do jogador. O método de update recebe a posição onde o jogador se encontra na tela.
@@ -43,7 +43,6 @@ Abaixo será comentado as principais alterações realizadas no código.
   void onCreate() override;  // Cria a aplicação
   void onUpdate() override;  // Atualiza a tela a
   void onPaint() override;   // Renderiza as imagens
-  void onPaintUI() override; // UI
   void onResize(glm::ivec2 const &size) override; // Redimensionamento de tela
   void onDestroy() override; // Destruição da tela
 ```
@@ -52,36 +51,45 @@ Abaixo será comentado as principais alterações realizadas no código.
 
 ```cpp
 private:
-  std::default_random_engine m_randomEngine;
   glm::ivec2 m_viewportSize{};
-  Model m_model;
 
-  struct Cube {
-    glm::vec3 m_position{};
-    glm::vec3 m_rotationAxis{};
-  };
-  std::array<Cube, 125> m_cubes; // define o array com tamanho maximo para um cubo 5x5x5 (125)
+  Model m_protagonist; // modelo do personagem
+  Model m_ground; // modelo do gramado
+  Model m_sand; // modelo das paredes
+  Model m_tree; // modelo das arvores
 
-  float m_angle{0.0}; // define o angulo de rotação
-  bool reverse{false}; // define se a velocidade é reversa
-  bool rotation{false}; // define se a rotação esta ativa
-  bool m_animation{false}; // define se a animação esta pausada
+  GameData m_gameData;
 
-  int m_trianglesToDraw{};
-  int collision{0}; // define o numero de colisões que o cubo realiza no centro
-  float m_distance{0.14366}; // distancia minima entre os cubinhos do cubo maior
-  float m_distance_v{0.14366}; // distancia minima entre os cubinhos do cubo maior que sofre a variação de velocidade
+  glm::vec3 m_position{0.0f, 1.8f, 0.0f}; // vetor de posição do personagem
+  glm::vec3 m_direction{0.0f, 0.0f, 1.0f}; // vetor de direções
+  float m_angle{glm::radians(-90.0f)}; // angulação do personagem
 
-  TrackBall m_trackBall;
-  float m_zoom{2.0}; // Zoom inicial
+  Camera m_camera; // 'instancia' a camera
 
-  glm::mat4 m_modelMatrix{1.0f};
+  float lastX = 300, lastY = 300;
+  float yaw = -90.0f;
+  float pitch = 0.0f;
+  float sensitivity = 0.1f;
+  glm::ivec2 mousePosition; // posição do mouse
+
   glm::mat4 m_viewMatrix{1.0f};
   glm::mat4 m_projMatrix{1.0f};
 
-  GLuint m_program{};
+  GLuint m_program_obj{};
 
-  void randomizeCube(Cube &cube);
+  bool control = false;
+  void checkCollision();
+
+  // propedades da iluminação
+  glm::vec4 m_Ia{1.0f};
+  glm::vec4 m_Id{1.0f};
+  glm::vec4 m_Is{1.0f};
+  glm::vec4 m_Ka{};
+  glm::vec4 m_Kd{};
+  glm::vec4 m_Ks{};
+  float m_shininess{};
+
+  std::vector<glm::vec2> m_treePositions = {...} // define posição 2d das arvores (x, z)
 };
 ```
 
@@ -89,182 +97,211 @@ private:
 
 - Neste arquivo foram implementados todos os métodos sobrescritos no arquivo **window.hpp**.
 - `onCreate()`
-  No método **OnCreate** são realizadas operações, como inicialização de variáveis, carregamento dos cubos, e eixo de rotação inicial dos cubos.
-  Por exemplo, quando fazemos `glm::vec3((x - 2) * m_distance, (y - 2) * m_distance, (z - 2) * m_distance)` no codigo estamos 'dizendo' que o cubo central é o cubo de posição 2 em x,y,z. ou seja o cubo central da animação 5x5x5. Além disso também aplicamos a distancia minima entre os cubinhos `m_distance` definida no `window.hpp`
+  No método **OnCreate** são realizadas operações, como inicialização de variáveis, carregamento modelos e texturas, tamanho dos modelos, fontes de luz.
+  Por exemplo, quando executamos os comandos abaixo:
+    - `m_protagonist.loadDiffuseTexture(assetsPath +"maps/Minecraft_steve_skin.jpg");`
+    - `m_protagonist.setSize(10.0f);`
+    - `m_protagonist.loadObj(assetsPath + "minecraft_steve.obj");`
+    - `m_protagonist.setupVAO(m_program_obj);`
+    - ` m_shininess = m_protagonist.getShininess();`
+
   ```cpp
-   void Window::onCreate() {
+  void Window::onCreate() {
     auto const assetsPath{abcg::Application::getAssetsPath()};
 
-    abcg::glClearColor(0, 0, 0, 1);
+    abcg::glClearColor(0, 0.753, 0.961, 1);
     abcg::glEnable(GL_DEPTH_TEST);
-    abcg::glEnable(GL_CULL_FACE);
 
-    m_program =
-        abcg::createOpenGLProgram({{.source = assetsPath+"normalvert",
-                                    stage=abcg::ShaderStage::Vertex},
-                                  {.source = assetsPath+"normalfrag",
+    m_program_obj =
+        abcg::createOpenGLProgram({{.source = assetsPath + "shaders/texture.vert",
+                                    .stage = abcg::ShaderStage::Vertex},
+                                  {.source = assetsPath + "shaders/texture.frag",
                                     .stage = abcg::ShaderStage::Fragment}});
 
-          m_model.loadObj(assetsPath + "cube.obj");
-          m_model.setupVAO(m_program);
+    m_protagonist.loadDiffuseTexture(assetsPath +
+                                    "maps/Minecraft_steve_skin.jpg");
+    m_protagonist.setSize(10.0f);
+    m_protagonist.loadObj(assetsPath + "minecraft_steve.obj");
+    m_protagonist.setupVAO(m_program_obj);
 
-          m_trianglesToDraw = m_model.getNumTriangles();
+    m_Ka = m_protagonist.getKa();
+    m_Kd = m_protagonist.getKd();
+    m_Ks = m_protagonist.getKs();
+    m_shininess = m_protagonist.getShininess();
 
-          std::uniform_int_distribution<int> rot_axis(0, 2);
+    m_ground.loadDiffuseTexture(assetsPath + "maps/Grass_Block_TEX.png");
+    m_ground.loadObj(assetsPath + "Grass_Block.obj");
+    m_ground.setupVAO(m_program_obj);
 
-          for (int x = 0; x < 5; x++) {
-            for (int y = 0; y < 5; y++) {
-              for (int z = 0; z < 5; z++) {
-                m_cubes.at(x * 25 + y * 5 + z * 1).m_position = glm::vec3(
-                    (x - 2) * m_distance, (y - 2) * m_distance, (z - 2) * m_distance);
-                glm::vec3 current_axis{0.0};
-                current_axis[rot_axis(m_randomEngine)] = glm::half_pi<float>();
-                m_cubes.at(x * 25 + y * 5 + z * 1).m_rotationAxis = current_axis;
-              }
-            }
-          }
-        }
+    m_sand.loadDiffuseTexture(assetsPath + "maps/sand.png");
+    m_sand.loadObj(assetsPath + "sand.obj");
+    m_sand.setupVAO(m_program_obj);
+
+    m_tree.setSize(4.0f);
+    m_tree.loadDiffuseTexture(assetsPath + "maps/Mineways2Skfb-RGBA.png");
+    m_tree.loadObj(assetsPath + "Mineways2Skfb.obj");
+    m_tree.setupVAO(m_program_obj);
+  }
   ```
 
 - `onEvent()`
-Função utilizada para movimentar a câmera em torno do cubo mágico. com auxilio dos metodos implementados em **trackball.cpp**
-    ```cpp
-    void Window::onEvent(SDL_Event const &event) {
-      glm::ivec2 mousePosition;
-      SDL_GetMouseState(&mousePosition.x, &mousePosition.y);
+Função utilizada para movimentar a câmera em torno do protagonista assim como capturar os comandos para movimentar o protagonista em torno da arena.
+As teclas para cima e para baixo movem o personagem para frente e para trás, já as setas esquerda e direita rotacionam o personagem em torno do proprio eixo.
 
-      if (event.type == SDL_MOUSEMOTION) {
-        m_trackBall.mouseMove(mousePosition);
+    ```cpp
+      void Window::onEvent(SDL_Event const &event) {
+        if (event.type == SDL_KEYDOWN) {
+          if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w)
+            m_gameData.m_input.set(gsl::narrow<size_t>(Input::Up));
+          if (event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_s)
+            m_gameData.m_input.set(gsl::narrow<size_t>(Input::Down));
+          if (event.key.keysym.sym == SDLK_LEFT || event.key.keysym.sym == SDLK_a)
+            m_gameData.m_input.set(gsl::narrow<size_t>(Input::Left));
+          if (event.key.keysym.sym == SDLK_RIGHT || event.key.keysym.sym == SDLK_d)
+            m_gameData.m_input.set(gsl::narrow<size_t>(Input::Right));
+        }
+        if (event.type == SDL_KEYUP) {
+          if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w)
+            m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Up));
+          if (event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_s)
+            m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Down));
+          if (event.key.keysym.sym == SDLK_LEFT || event.key.keysym.sym == SDLK_a)
+            m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Left));
+          if (event.key.keysym.sym == SDLK_RIGHT || event.key.keysym.sym == SDLK_d)
+            m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Right));
+        }
+
+        if (event.type == SDL_MOUSEWHEEL) {
+          m_camera.zoom(event.wheel.y);
+        }
+
+        glm::ivec2 mousePosition;
+        SDL_GetMouseState(&mousePosition.x, &mousePosition.y);
+
+        if (event.type == SDL_MOUSEMOTION) {
+          m_camera.mouseMove(mousePosition);
+        }
+        if (event.type == SDL_MOUSEBUTTONDOWN &&
+            event.button.button == SDL_BUTTON_LEFT) {
+          m_camera.mousePress(mousePosition);
+        }
+        if (event.type == SDL_MOUSEBUTTONUP &&
+            event.button.button == SDL_BUTTON_LEFT) {
+          m_camera.mouseRelease();
+        }
       }
-      if (event.type == SDL_MOUSEBUTTONDOWN &&
-          event.button.button == SDL_BUTTON_LEFT) {
-        m_trackBall.mousePress(mousePosition);
-      }
-      if (event.type == SDL_MOUSEBUTTONUP &&
-          event.button.button == SDL_BUTTON_LEFT) {
-        m_trackBall.mouseRelease(mousePosition);
-      }
-      if (event.type == SDL_MOUSEWHEEL) {
-        m_zoom += (event.wheel.y > 0 ? -1.0f : 1.0f) / 5.0f;
-        m_zoom = glm::clamp(m_zoom, -1.5f, 1.0f);
-      }
-    }
     ```
 
 - `onUpdate()`
-No método **onUpdate** o cubo é sofre todas as transformações, seja rotação ou distanciamento entre cada cubinho.
+No método **onUpdate** é onde todas as transformações ocorrem, seja rotação do personagem movimentação, check de colisão.
+
+No fragmento de código abaixo é onde é calculada a direção(angulação) que o personagem está olhando, com auxilio das funções `wrapAngle` e funções trigonométricas como `sin, cos, radians`. Além disso também é calculado a proximo movimento do personagem i.e. sua posição na arena, usamos a variavel `m_position_mv` para guardar a proxima posição do personagem.
   ```cpp
     void Window::onUpdate() {
-      std::uniform_int_distribution<int> rot_axis(0, 2);
       auto const deltaTime{gsl::narrow_cast<float>(getDeltaTime())};
-      float m_distance_aux = m_distance;
-      m_modelMatrix = m_trackBall.getRotation();
+      auto const N{20};
+      bool colide = false;
+      auto m_position_mv = m_position;
 
-      m_viewMatrix =
-          glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f + m_zoom),
-                      glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-      if (!m_animation) {
-        return;
+      if (m_gameData.m_input[static_cast<size_t>(Input::Left)]) {
+        m_angle = glm::wrapAngle(m_angle + glm::radians(135.0f) * deltaTime);
+        m_direction =
+            glm::vec3(-glm::cos(m_angle + PI), 0.0f, glm::sin(m_angle + PI));
       }
-    ```
-
-  Após iniciar a animação o cubo começa a se distanciar, até que atinge uma distancia maxima `0.7`, após atingir essa distancia a velicidade sofre uma inversão de sinal, até colidir no centro outra vez e o sinal da  velocidade inverter novamente. Cada colisão aumenta a velocidade até um treshold de `1.5`.
-    ```cpp
-      float collision_speed = ((0.05 * collision) < 1.5) ? (0.05 * collision) : 1.5;
-      if (!reverse) {
-        m_distance_v =
-            glm::wrapAngle(m_distance_v + (0.5 + collision_speed) * deltaTime);
-      } else {
-        m_distance_v =
-            glm::wrapAngle(m_distance_v - (0.5 + collision_speed) * deltaTime);
+      if (m_gameData.m_input[static_cast<size_t>(Input::Right)]) {
+        m_angle = glm::wrapAngle(m_angle - glm::radians(135.0f) * deltaTime);
+        m_direction =
+            glm::vec3(-glm::cos(m_angle + PI), 0.0f, glm::sin(m_angle + PI));
       }
+      if (m_gameData.m_input[static_cast<size_t>(Input::Up)])
+        m_position_mv += m_direction * deltaTime * 4.5f;
+      if (m_gameData.m_input[static_cast<size_t>(Input::Down)])
+        m_position_mv -= m_direction * deltaTime * 4.5f;
+  ```
+  Após calcular a angulação e a proxima posição do personagem, é feito o check de colisão, para isso usamos o snippet abaixo.
+  ```cpp
+      for (auto const z : m_treePositions) {
+        float x = z[0];
+        float y = z[1];
 
-      if (m_distance_v >= 0.7 && !reverse) {
-        reverse = !reverse;
-      } else if (m_distance_v <= m_distance_aux && reverse) {
-        reverse = !reverse;
-        collision = collision + 1;
-      }
-    ```
-
-    O fragmento de codigo abaixo é responsável pelo distanciamento das fileiras de cubinhos, no fragmento as velocidades são calculadas e aqui são aplicadas, além disso também checamos a variavel `collision` para saber em qual eixo devemos lançar e distanciar os cubinhos.
-    ```cpp
-      if ((collision % 2) == 0) {
-        for (int x = 0; x < 5; x++) {
-          for (int y = 0; y < 5; y++) {
-            for (int z = 0; z < 5; z++) {
-              m_cubes.at(x * 25 + y * 5 + z * 1).m_position =
-                  glm::vec3((x - 2) * m_distance_v, (y - 2) * m_distance_aux,
-                            (z - 2) * m_distance_aux);
-            }
-          }
-        }
-      } else if ((collision % 3) == 0) {
-        for (int x = 0; x < 5; x++) {
-          for (int y = 0; y < 5; y++) {
-            for (int z = 0; z < 5; z++) {
-              m_cubes.at(x * 25 + y * 5 + z * 1).m_position =
-                  glm::vec3((x - 2) * m_distance_aux, (y - 2) * m_distance_aux,
-                            (z - 2) * m_distance_v);
-            }
-          }
-        }
-      } else {
-        for (int x = 0; x < 5; x++) {
-          for (int y = 0; y < 5; y++) {
-            for (int z = 0; z < 5; z++) {
-              m_cubes.at(x * 25 + y * 5 + z * 1).m_position =
-                  glm::vec3((x - 2) * m_distance_aux, (y - 2) * m_distance_v,
-                            (z - 2) * m_distance_aux);
-            }
+        if ( !(m_position_mv[0]+0.75f <= x || m_position_mv[0]-0.75f >= x) ){
+          if ( !(m_position_mv[2]+0.75f <= y || m_position_mv[2]-0.75f >= y) ) {
+            colide = true;
+            break;
           }
         }
       }
-    ```
-    - O fragmento de codigo abaixo é responsável pela rotação de cada cubinho, vale notar que sempre que a distancia entre as fileiras é proxima do minimo permitido m_distance, a rotação sofre uma pausa, e assim que a distancia aumenta, ela volta a acontecer. Note que temos uma regra para checar cada valor de `m_angle` e saber como rotacionar cada cubinho.
-    ```cpp
-    if (rotation) {
-      m_angle = m_angle + glm::half_pi<float>() * deltaTime;
-      if (m_angle > glm::half_pi<float>() * 4 &&
-          m_angle < glm::half_pi<float>() * 4) {
-        m_angle = 0.0;
-        for (int x = 0; x < 5; x++) {
-          for (int y = 0; y < 5; y++) {
-            for (int z = 0; z < 5; z++) {
-              glm::vec3 current_axis{0.0};
-              current_axis[rot_axis(m_randomEngine)] = glm::half_pi<float>();
-              m_cubes.at(x * 25 + y * 5 + z * 1).m_rotationAxis = current_axis;
-            }
-          }
-        }
-      } else if (m_angle > glm::half_pi<float>() * 3 &&
-                m_angle <= glm::half_pi<float>() * 3) {
-        m_angle = glm::half_pi<float>() * 3;
-      } else if (m_angle > glm::half_pi<float>() * 2 &&
-                m_angle <= glm::half_pi<float>() * 2) {
-        m_angle = glm::half_pi<float>() * 2;
-      } else if (m_angle > glm::half_pi<float>() &&
-                m_angle <= glm::half_pi<float>()) {
-        m_angle = glm::half_pi<float>();
+      if (m_position_mv[0]+1.0f >= N || m_position_mv[0]-1.0f <= -N || m_position_mv[2]-1.0f <= -N || m_position_mv[2]+1.0f >= N){
+        colide = true;
       }
-    }
-    ```
+      if (colide == false){
+        m_position = m_position_mv;
+      }
+      m_camera.update(m_position);
+  ```
+
+### Sistema de colisão:
+- `No caso de colisão personagem x arvore`: Para cada arvore é captura a proxima posição dopersonagem e é feito a checagem se a proxima posição do personagem está no raio de alguma arvore,se a proximo posição estiver no raio de uma arvore a flag `colide` se torna `true` e a m_positionque é a posição real do personagem não é atualizada.
+- `No caso de colisão personagem x parede da arena`: É feita uma checagem se a proxima posição dopersonagem ultrapassa os limites da arena (que no codigo é representado pela constante N=20) se aproxima posição do personagem estiver fora da arena a flag `colide` se torna `true` e am_position que é a posição real do personagem não é atualizada.
+- `Não há colisão`: Se em nenhum momento do `onUpdate()` a variavel se tornou `true` a variavel`m_position` é atualizada com o valor de `m_position_mv`, e o personagem se move.
 
 - `onPaint()`
     - No método **onPaint** são desenhados os objetos da aplicação.
-    - Em especial aqui, são aplicadas dois tipos de transformação sobre os cubos, começando com translação, escalonamento e rotação do cubo como um objeto só, e depois algumas transformações para adequar o cubo à visão de perspectiva ou ortográfica.
-- `onPaintUI()`
-    - No método **onPaintUI** são desenhados os elementos de UI da tela.
-    - Aqui boa parte dos elementos foram reaproveitados do projeto Viewer 2, como a seleção de visão por perspectiva ou ortográfica e direção de criação das faces, mas foi adicionado também um botão para pausar/retomar a animação, e um texto mostrando a atualização das distâncias entre cubos em tempo real.
+    - Em especial, nesta função é definida as variaveis referente a iluminação. Por exemplo em:
+    ```cpp
+    auto const lightDirRotated{glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)};
+      abcg::glUniform4fv(lightDirLoc, 1, &lightDirRotated.x);
+      ...
+      abcg::glUniform4fv(KaLoc, 1, &m_Ka.x);
+      abcg::glUniform4fv(KdLoc, 1, &m_Kd.x);
+      abcg::glUniform4fv(KsLoc, 1, &m_Ks.x);
+      abcg::glUniform1f(shininessLoc, m_shininess);
+    ```
+    - Além disso também é renderizado o protagonista, as paredes, o solo e as arvores:
+    ```cpp
+    auto const lightDirRotated{glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)};
+      // render do personagem
+      m_protagonist.render();
+      auto const N{20}; // tamanho da arena
+      for (auto const z : iter::range(-N, N + 1)) {
+        for (auto const x : iter::range(-N, N + 1)) {
+          // Set model matrix as a translation matrix
+          glm::mat4 model{1.0f};
+          model = glm::translate(model, glm::vec3(x, 0.0f, z));
+          abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &model[0][0]);
+          //render do solo
+          m_ground.render();
+          //render das paredes
+          if (z == -N || z == N || x == -N || x == N) {
+            glm::mat4 model1{1.0f};
+            glm::mat4 model2{1.0f};
+            model1 = glm::translate(model1, glm::vec3(x, 1.15f, z));
+            model2 = glm::translate(model2, glm::vec3(x, 2.30f, z));
+            abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &model1[0][0]);
+            m_sand.render();
+            abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &model2[0][0]);
+            m_sand.render();
+          }
+        }
+      }
+      // render das arvores, note que o vetor 2d definido no window.hpp é tranformado em 3d onde y=3.0f
+      for (auto const z : m_treePositions) {
+        glm::mat4 model{1.0f};
+        model = glm::translate(model, glm::vec3(z[0], 3.0f, z[1]));
+        abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &model[0][0]);
+        m_tree.render();
+      }
+    ```
+
 - `onResize()`
     - No método **onResize** é a função para adaptar a tela quando sofre um redicionamento.
+
 - `onDestroy()`
     - No método **onDestroy** é onde a função que serve para apagar todos os elementos quando a janela da aplicação for fechada.
 
 ## Demonstração (clique no GIF)
 
-![Animação.gif](README/CuboMaluco.gif)
+![Animação.gif](README/minecraftArena.gif)
 
 ---
 

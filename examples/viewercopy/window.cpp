@@ -84,6 +84,9 @@ void Window::onCreate() {
 
 void Window::onUpdate() {
   auto const deltaTime{gsl::narrow_cast<float>(getDeltaTime())};
+  auto const N{20};
+  bool colide = false;
+  auto m_position_mv = m_position;
 
   if (m_gameData.m_input[static_cast<size_t>(Input::Left)]) {
     m_angle = glm::wrapAngle(m_angle + glm::radians(135.0f) * deltaTime);
@@ -96,9 +99,29 @@ void Window::onUpdate() {
         glm::vec3(-glm::cos(m_angle + PI), 0.0f, glm::sin(m_angle + PI));
   }
   if (m_gameData.m_input[static_cast<size_t>(Input::Up)])
-    m_position += m_direction * deltaTime * 4.5f;
+    m_position_mv += m_direction * deltaTime * 8.5f;
   if (m_gameData.m_input[static_cast<size_t>(Input::Down)])
-    m_position -= m_direction * deltaTime * 4.5f;
+    m_position_mv -= m_direction * deltaTime * 8.5f;
+
+  for (auto const z : m_treePositions) {
+    float x = z[0];
+    float y = z[1];
+
+    if ( !(m_position_mv[0]+0.75f <= x || m_position_mv[0]-0.75f >= x) ){
+      if ( !(m_position_mv[2]+0.75f <= y || m_position_mv[2]-0.75f >= y) ) {
+        colide = true;
+        break;
+      }
+    }
+  }
+
+  if (m_position_mv[0]+1.0f >= N || m_position_mv[0]-1.0f <= -N || m_position_mv[2]-1.0f <= -N || m_position_mv[2]+1.0f >= N){
+    colide = true;
+  }
+
+  if (colide == false){
+    m_position = m_position_mv;
+  }
 
   m_camera.update(m_position);
 }
